@@ -1,0 +1,1407 @@
+/* ================================================================
+   Currently Nameless — Frontend Script
+   ================================================================ */
+
+const firebaseConfig = window.firebaseConfig || null;
+const USE_FIREBASE = !!(
+  firebaseConfig &&
+  firebaseConfig.apiKey &&
+  !firebaseConfig.apiKey.includes('<') &&
+  firebaseConfig.projectId &&
+  !firebaseConfig.projectId.includes('<')
+);
+let firebaseApp = null;
+let firebaseAuth = null;
+let firebaseDb = null;
+const API = '';  // same origin
+
+// ── State ─────────────────────────────────────────────────────────
+let state = {
+  token: localStorage.getItem('cn_token') || null,
+  email: localStorage.getItem('cn_email') || null,
+  userId: localStorage.getItem('cn_userId') || null,
+  allReports: [],
+  reports: [],
+  view: 'list',
+  nearMeActive: false,
+  comparisonOpen: false,
+  comparisonItem: '',
+  comparisonLocations: [],
+  userLat: null,
+  userLng: null,
+  searchQuery: '',
+};
+
+// ── Map ───────────────────────────────────────────────────────────
+let map = null;
+let markers = [];
+
+// ── Utils ─────────────────────────────────────────────────────────
+function timeAgo(isoString) {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
+function formatPrice(n) {
+  return '₦' + Number(n).toLocaleString('en-NG');
+}
+
+function availLabel(avail) {
+  const map = { in_stock: '✅ In Stock', limited: '⚠️ Limited', out_of_stock: '❌ Out of Stock' };
+  return map[avail] || avail;
+}
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function hasUserLocation() {
+  return state.userLat !== null && state.userLng !== null;
+}
+
+function reportLocationLabel(report) {
+  return report.lga || report.state || report.locationName || 'Unspecified location';
+}
+
+function reportLocationKey(report) {
+  return reportLocationLabel(report).toLowerCase();
+}
+
+function applyReportFilters(reports) {
+  let filtered = reports.slice();
+  if (state.searchQuery) {
+    const term = state.searchQuery.trim().toLowerCase();
+    filtered = filtered.filter(r => {
+      return (
+        r.itemName.toLowerCase().includes(term) ||
+        (r.locationName || '').toLowerCase().includes(term) ||
+        (r.sellerPlace || '').toLowerCase().includes(term) ||
+        (r.state || '').toLowerCase().includes(term) ||
+        (r.lga || '').toLowerCase().includes(term)
+      );
+    });
+  }
+  if (state.nearMeActive && hasUserLocation()) {
+    filtered = filtered.filter(r => haversine(state.userLat, state.userLng, r.lat, r.lng) <= 5);
+  }
+  return filtered;
+}
+
+function getComparableReports() {
+  const itemQuery = (state.comparisonItem || state.searchQuery || '').trim().toLowerCase();
+  return state.allReports.filter(report => {
+    if (!itemQuery) return true;
+    return report.itemName.toLowerCase().includes(itemQuery);
+  });
+}
+
+function getLocationGroups(reports) {
+  const groups = reports.reduce((acc, report) => {
+    const key = reportLocationKey(report);
+    if (!acc[key]) {
+      acc[key] = {
+        key,
+        label: reportLocationLabel(report),
+        reports: [],
+      };
+    }
+    acc[key].reports.push(report);
+    return acc;
+  }, {});
+
+  return Object.values(groups).sort((a, b) => b.reports.length - a.reports.length || a.label.localeCompare(b.label));
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+function toast(msg, type = 'info', duration = 3500) {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ── Auth header ───────────────────────────────────────────────────
+function authHeaders() {
+  return state.token ? { Authorization: `Bearer ${state.token}` } : {};
+}
+
+// ── API calls ─────────────────────────────────────────────────────
+async function apiFetch(path, options = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json', ...authHeaders(), ...(options.headers || {}) },
+    ...options,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+async function initFirebase() {
+  if (!USE_FIREBASE || typeof firebase === 'undefined') return;
+  try {
+    firebaseApp = firebase.initializeApp(firebaseConfig);
+    firebaseAuth = firebase.auth();
+    firebaseDb = firebase.firestore();
+
+    firebaseAuth.onAuthStateChanged(user => {
+      if (user) {
+        setSession(user.uid, user.email, user.uid);
+      } else {
+        clearSession();
+      }
+      renderAuthArea();
+    });
+  } catch (err) {
+    console.error('Firebase init error:', err);
+    toast('Firebase setup failed. Using local backend instead.', 'error');
+  }
+}
+
+function reportFromFirestore(doc) {
+  const data = doc.data();
+  return {
+    id: doc.id,
+    itemName: data.itemName || '',
+    price: Number(data.price || 0),
+    availability: data.availability || 'in_stock',
+    lat: Number(data.lat || 0),
+    lng: Number(data.lng || 0),
+    locationName: data.locationName || '',
+    measurement: data.measurement || '',
+    sellerPlace: data.sellerPlace || '',
+    sellerContact: data.sellerContact || '',
+    state: data.state || '',
+    lga: data.lga || '',
+    media: data.media || [],
+    comments: data.comments || [],
+    timestamp: data.timestamp || new Date().toISOString(),
+    userId: data.userId || '',
+    upvotes: data.upvotes || [],
+    debunks: data.debunks || [],
+  };
+}
+
+function enrichReport(report) {
+  const upvotes = Array.isArray(report.upvotes) ? report.upvotes : [];
+  const debunks = Array.isArray(report.debunks) ? report.debunks : [];
+  const comments = Array.isArray(report.comments) ? report.comments : [];
+  const media = Array.isArray(report.media) ? report.media : [];
+  const totalVotes = upvotes.length + debunks.length;
+  const confidence = totalVotes > 0 ? Math.round((upvotes.length / totalVotes) * 100) : null;
+  return {
+    ...report,
+    upvotes,
+    debunks,
+    comments,
+    media,
+    confidence,
+    locationName: report.locationName || '',
+    upvoteCount: upvotes.length,
+    debunkCount: debunks.length,
+  };
+}
+
+async function firebaseLoadReports() {
+  const snapshot = await firebaseDb.collection('reports').orderBy('timestamp', 'desc').get();
+  let reports = snapshot.docs.map(reportFromFirestore).map(enrichReport);
+
+  return reports;
+}
+
+async function firebaseSubmitReport({
+  itemName,
+  price,
+  measurement,
+  availability,
+  lat,
+  lng,
+  locationName,
+  state: stateName,
+  lga,
+  sellerPlace,
+  sellerContact,
+  media = [],
+}) {
+  const report = {
+    itemName,
+    price,
+    measurement,
+    availability,
+    lat,
+    lng,
+    locationName,
+    state: stateName,
+    lga,
+    sellerPlace,
+    sellerContact,
+    media,
+    comments: [],
+    timestamp: new Date().toISOString(),
+    userId: state.userId,
+    upvotes: [],
+    debunks: [],
+  };
+  const docRef = await firebaseDb.collection('reports').add(report);
+  const snapshot = await docRef.get();
+  return enrichReport(reportFromFirestore(snapshot));
+}
+
+async function firebaseVote(reportId, voteType) {
+  const reportRef = firebaseDb.collection('reports').doc(reportId);
+  const snapshot = await reportRef.get();
+  if (!snapshot.exists) throw new Error('Report not found');
+
+  const report = reportFromFirestore(snapshot);
+  if (report.userId === state.userId) throw new Error('You cannot vote on your own report');
+  if (report.upvotes.includes(state.userId) || report.debunks.includes(state.userId)) {
+    throw new Error('You have already voted on this report');
+  }
+
+  const field = voteType === 'upvote' ? 'upvotes' : 'debunks';
+  await reportRef.update({ [field]: firebase.firestore.FieldValue.arrayUnion(state.userId) });
+  const updatedSnap = await reportRef.get();
+  return enrichReport(reportFromFirestore(updatedSnap));
+}
+
+async function firebaseLogin(email, password) {
+  const userCredential = await firebaseAuth.signInWithEmailAndPassword(email, password);
+  const user = userCredential.user;
+  return { token: user.uid, email: user.email, userId: user.uid };
+}
+
+async function firebaseRegister(email, password) {
+  const userCredential = await firebaseAuth.createUserWithEmailAndPassword(email, password);
+  const user = userCredential.user;
+  return { token: user.uid, email: user.email, userId: user.uid };
+}
+
+async function firebaseSignInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  const userCredential = await firebaseAuth.signInWithPopup(provider);
+  const user = userCredential.user;
+  return { token: user.uid, email: user.email, userId: user.uid };
+}
+
+async function requestUserLocation() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) {
+      toast('Geolocation is not available in your browser.', 'info');
+      resolve(false);
+      return;
+    }
+
+    toast('Requesting your location to show nearby listings…', 'info', 3000);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        state.userLat = pos.coords.latitude;
+        state.userLng = pos.coords.longitude;
+        state.nearMeActive = true;
+        const nearBtn = document.getElementById('nearme-btn');
+        if (nearBtn) {
+          nearBtn.classList.add('active-nearme');
+          nearBtn.textContent = '✕ Near Me';
+        }
+        if (map) map.setView([state.userLat, state.userLng], 12);
+        resolve(true);
+      },
+      err => {
+        toast('Location access declined or unavailable. Showing wider listings.', 'info');
+        resolve(false);
+      },
+      { enableHighAccuracy: true, timeout: 9000 }
+    );
+  });
+}
+
+async function loadReports() {
+  try {
+    if (USE_FIREBASE && firebaseDb) {
+      state.allReports = await firebaseLoadReports();
+      state.reports = applyReportFilters(state.allReports);
+      render();
+      return;
+    }
+
+    const url = '/api/reports';
+    state.allReports = await apiFetch(url, { method: 'GET', headers: {} });
+    state.reports = applyReportFilters(state.allReports);
+    render();
+  } catch (err) {
+    toast('Failed to load reports: ' + err.message, 'error');
+  }
+}
+
+// ── Auth flow ─────────────────────────────────────────────────────
+function setSession(token, email, userId) {
+  state.token = token;
+  state.email = email;
+  state.userId = userId;
+  localStorage.setItem('cn_token', token);
+  localStorage.setItem('cn_email', email);
+  localStorage.setItem('cn_userId', userId);
+}
+
+function clearSession() {
+  state.token = null;
+  state.email = null;
+  state.userId = null;
+  localStorage.removeItem('cn_token');
+  localStorage.removeItem('cn_email');
+  localStorage.removeItem('cn_userId');
+}
+
+async function verifyToken() {
+  if (USE_FIREBASE && firebaseAuth) {
+    const user = firebaseAuth.currentUser;
+    if (user) {
+      setSession(user.uid, user.email, user.uid);
+      return true;
+    }
+    return false;
+  }
+
+  if (!state.token) return false;
+  try {
+    await apiFetch('/api/verify');
+    return true;
+  } catch {
+    clearSession();
+    return false;
+  }
+}
+
+async function handleLogout() {
+  if (USE_FIREBASE && firebaseAuth) {
+    try {
+      await firebaseAuth.signOut();
+    } catch (err) {
+      console.error('Firebase sign out error:', err);
+    }
+  }
+  clearSession();
+  renderAuthArea();
+  loadReports();
+  toast('Signed out.', 'info');
+}
+
+// ── Render auth area ──────────────────────────────────────────────
+function renderAuthArea() {
+  const el = document.getElementById('auth-area');
+  const reportBtn = document.getElementById('report-btn');
+  const heroLoginBtn = document.getElementById('hero-login-btn');
+  if (state.token) {
+    el.innerHTML = `
+      <span class="user-email">${state.email}</span>
+      <button class="btn btn-ghost btn-sm" id="logout-btn">Sign Out</button>
+    `;
+    document.getElementById('logout-btn').addEventListener('click', handleLogout);
+    reportBtn.style.display = 'inline-flex';
+    if (heroLoginBtn) heroLoginBtn.style.display = 'none';
+  } else {
+    el.innerHTML = `
+      <button class="btn btn-outline btn-sm" id="header-login-btn">Sign In</button>
+      <button class="btn btn-primary btn-sm" id="header-register-btn">Register</button>
+    `;
+    document.getElementById('header-login-btn').addEventListener('click', () => openModal('login-modal'));
+    document.getElementById('header-register-btn').addEventListener('click', () => openModal('register-modal'));
+    reportBtn.style.display = 'none';
+    if (heroLoginBtn) heroLoginBtn.style.display = 'inline-flex';
+  }
+}
+
+// ── Render reports ────────────────────────────────────────────────
+function render() {
+  renderAuthArea();
+  updateReportCount();
+  updateLiveHighlights();
+  renderComparisonPanel();
+  if (state.view === 'list') renderList();
+  else renderMap();
+}
+
+function updateLiveHighlights() {
+  const hero = document.getElementById('hero-highlights');
+  if (!hero) return;
+
+  if (!state.reports || state.reports.length === 0) {
+    hero.innerHTML = `<div class="hero-panel-item"><span>No live data yet</span><strong>—</strong></div>`;
+    return;
+  }
+
+  const radiusKm = state.userLat !== null && state.userLng !== null ? 25 : 20000;
+  let localReports = state.reports;
+  let sourceLabel = 'Nigeria';
+  if (state.userLat !== null && state.userLng !== null) {
+    const nearby = state.reports.filter(r => haversine(state.userLat, state.userLng, r.lat, r.lng) <= radiusKm);
+    if (nearby.length > 0) {
+      localReports = nearby;
+      const nearest = nearby.slice().sort((a, b) => haversine(state.userLat, state.userLng, a.lat, a.lng) - haversine(state.userLat, state.userLng, b.lat, b.lng))[0];
+      sourceLabel = nearest.locationName || nearest.lga || nearest.state || 'Nearby area';
+    } else {
+      sourceLabel = 'Nearby radius';
+    }
+  }
+
+  const grouped = localReports.reduce((acc, report) => {
+    const key = report.itemName.trim() || 'Unknown item';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(report);
+    return acc;
+  }, {});
+
+  const topItems = Object.entries(grouped)
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, 3);
+
+  hero.innerHTML = topItems.map(([itemName, reports]) => {
+    const average = reports.reduce((sum, report) => sum + Number(report.price), 0) / reports.length;
+    const unit = reports.find(report => report.measurement)?.measurement || '';
+    const locationHint = reports[0].locationName || reports[0].lga || reports[0].state || sourceLabel;
+    return `
+      <div class="hero-panel-item">
+        <span>${escHtml(itemName)} · ${escHtml(locationHint)}</span>
+        <strong>${formatPrice(Math.round(average))}${unit ? `/${escHtml(unit)}` : ''}</strong>
+      </div>`;
+  }).join('');
+}
+
+function updateReportCount() {
+  const el = document.getElementById('report-count');
+  const status = document.getElementById('nearby-status');
+  const n = state.reports.length;
+  const nationwideCount = state.allReports.length;
+  el.textContent = n === 0
+    ? 'No reports found'
+    : `Showing ${n} of ${nationwideCount} matching nationwide report${nationwideCount !== 1 ? 's' : ''}`;
+
+  if (state.nearMeActive && hasUserLocation()) {
+    status.textContent = 'Showing reports within 5 km of your current location. Open Nationwide to compare listings across the country.';
+    status.style.display = 'block';
+  } else if (hasUserLocation()) {
+    status.textContent = 'Showing nationwide listings. Your location is available for comparisons and distance sorting.';
+    status.style.display = 'block';
+  } else {
+    status.textContent = 'Showing nationwide listings. Use Near Me to add your location to the comparison.';
+    status.style.display = 'block';
+  }
+}
+
+function renderComparisonPanel() {
+  const section = document.getElementById('comparison-section');
+  if (!section) return;
+
+  section.style.display = state.comparisonOpen ? 'block' : 'none';
+  document.getElementById('compare-btn')?.classList.toggle('active-nearme', state.comparisonOpen);
+  if (!state.comparisonOpen) return;
+
+  const input = document.getElementById('compare-item-input');
+  if (input && document.activeElement !== input) {
+    input.value = state.comparisonItem || state.searchQuery || '';
+  }
+
+  const reports = getComparableReports();
+  const groups = getLocationGroups(reports);
+  const select = document.getElementById('compare-location-select');
+  const grid = document.getElementById('comparison-grid');
+  const selected = document.getElementById('comparison-selected');
+  const title = document.getElementById('comparison-title');
+
+  const nearestGroup = hasUserLocation()
+    ? groups
+        .map(group => ({
+          ...group,
+          nearestDistance: Math.min(...group.reports.map(report => haversine(state.userLat, state.userLng, report.lat, report.lng))),
+        }))
+        .sort((a, b) => a.nearestDistance - b.nearestDistance)[0]
+    : null;
+
+  if (state.comparisonLocations.length === 0) {
+    const starterGroups = nearestGroup
+      ? [nearestGroup, ...groups.filter(group => group.key !== nearestGroup.key)]
+      : groups;
+    state.comparisonLocations = starterGroups.slice(0, 4).map(group => group.key);
+  }
+
+  const selectedKeys = new Set(state.comparisonLocations);
+  const visibleGroups = groups.filter(group => selectedKeys.has(group.key));
+  const itemLabel = (state.comparisonItem || state.searchQuery || 'all items').trim();
+  title.textContent = `Compare ${itemLabel || 'all items'} by location`;
+
+  select.innerHTML = '<option value="">Select from available locations</option>' + groups
+    .filter(group => !selectedKeys.has(group.key))
+    .map(group => `<option value="${escHtml(group.key)}">${escHtml(group.label)} (${group.reports.length})</option>`)
+    .join('');
+
+  selected.innerHTML = visibleGroups.length
+    ? visibleGroups.map(group => `
+        <button class="comparison-chip" type="button" data-location-key="${escHtml(group.key)}">
+          ${escHtml(group.label)}
+          <span>Remove</span>
+        </button>
+      `).join('')
+    : '<span class="comparison-empty-text">Choose locations to compare.</span>';
+
+  if (!reports.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">No data</div>
+        <h3>No matching prices</h3>
+        <p>Try another item or clear the search to compare available locations.</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = visibleGroups.map(group => {
+    const prices = group.reports.map(report => Number(report.price)).filter(price => !Number.isNaN(price));
+    const average = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+    const lowest = Math.min(...prices);
+    const highest = Math.max(...prices);
+    const recent = group.reports.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+    const distanceText = hasUserLocation()
+      ? `${Math.min(...group.reports.map(report => haversine(state.userLat, state.userLng, report.lat, report.lng))).toFixed(1)} km from you`
+      : 'Add your location for distance';
+    const unit = recent?.measurement ? `/${escHtml(recent.measurement)}` : '';
+
+    return `
+      <article class="comparison-card">
+        <div class="comparison-card-top">
+          <strong>${escHtml(group.label)}</strong>
+          <span>${group.reports.length} listing${group.reports.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="comparison-average">${formatPrice(Math.round(average))}${unit}</div>
+        <div class="comparison-range">
+          <span>Low ${formatPrice(lowest)}</span>
+          <span>High ${formatPrice(highest)}</span>
+        </div>
+        <div class="comparison-card-footer">
+          <span>${escHtml(distanceText)}</span>
+          <span>${recent ? timeAgo(recent.timestamp) : ''}</span>
+        </div>
+      </article>`;
+  }).join('');
+}
+
+function renderList() {
+  const container = document.getElementById('list-view');
+  const hasLocation = state.userLat !== null && state.userLng !== null;
+  const reportsWithDistance = state.reports.map(r => ({
+    ...r,
+    distanceKm: hasLocation ? haversine(state.userLat, state.userLng, r.lat, r.lng) : null,
+  }));
+
+  if (hasLocation) {
+    reportsWithDistance.sort((a, b) => a.distanceKm - b.distanceKm);
+  }
+
+  if (reportsWithDistance.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <h3>No reports yet</h3>
+        <p>Be the first to report a price in your area.</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = reportsWithDistance.map((r, idx) => reportCardHTML(r, idx === 0 && state.nearMeActive)).join('');
+
+  // Attach vote listeners
+  container.querySelectorAll('.vote-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const { reportId, voteType } = btn.dataset;
+      handleVote(reportId, voteType);
+    });
+  });
+
+  // Attach comment submit listeners
+  container.querySelectorAll('.comment-submit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const reportId = btn.dataset.reportId;
+      const input = document.getElementById(`comment-input-${reportId}`);
+      if (!input) return;
+      saveReportComment(reportId, input.value);
+      input.value = '';
+    });
+  });
+
+  // Attach reply toggle listeners
+  container.querySelectorAll('.reply-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const reportId = btn.dataset.reportId;
+      const commentId = btn.dataset.commentId;
+      const form = document.getElementById(`reply-form-${reportId}-${commentId}`);
+      if (form) form.style.display = form.style.display === 'grid' ? 'none' : 'grid';
+    });
+  });
+
+  // Attach reply submit listeners
+  container.querySelectorAll('.reply-submit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const reportId = btn.dataset.reportId;
+      const commentId = btn.dataset.commentId;
+      const input = document.getElementById(`reply-input-${reportId}-${commentId}`);
+      if (!input) return;
+      saveReportComment(reportId, input.value, commentId);
+      input.value = '';
+      const form = document.getElementById(`reply-form-${reportId}-${commentId}`);
+      if (form) form.style.display = 'none';
+    });
+  });
+}
+
+function reportCardHTML(r, isNearest = false) {
+  const canVote = state.token && r.userId !== state.userId;
+  const alreadyVoted = state.token && (r.upvotes.includes(state.userId) || r.debunks.includes(state.userId));
+  const voteDisabled = !state.token || !canVote || alreadyVoted ? 'disabled' : '';
+  const voteTitle = !state.token
+    ? 'Sign in to vote'
+    : r.userId === state.userId
+    ? 'You cannot vote on your own report'
+    : alreadyVoted
+    ? 'You already voted'
+    : '';
+  const extraClass = isNearest ? ' nearest-report' : '';
+  const distanceLabel = r.distanceKm !== null
+    ? `<span class="meta-dot">·</span><span class="meta-distance">📍 ${r.distanceKm.toFixed(1)} km away</span>`
+    : '';
+
+  const confBar = r.confidence !== null
+    ? `<div class="confidence-bar"><div class="confidence-fill" style="width:${r.confidence}%"></div></div>
+       <span class="confidence-label">${r.confidence}% confidence</span>`
+    : `<span class="confidence-label">No votes yet</span>`;
+
+  const mediaMarkup = (r.media && r.media.length)
+    ? `<div class="report-media">
+         ${r.media.map(media => `<img class="media-thumb" src="${escHtml(media.url || media)}" alt="Evidence preview" />`).join('')}
+       </div>`
+    : '<div class="report-media">No evidence uploaded yet.</div>';
+
+  return `
+    <div class="report-card${extraClass}">
+      <div class="report-card-header">
+        <div class="item-name">${escHtml(r.itemName)}</div>
+        <div class="price-badge">${formatPrice(r.price)}${r.measurement ? `/${escHtml(r.measurement)}` : ''}</div>
+      </div>
+      <div class="report-meta">
+        <span class="avail-badge avail-${r.availability}">${availLabel(r.availability)}</span>
+        ${r.locationName ? `<span class="meta-dot">·</span><span class="meta-location">📍 ${escHtml(r.locationName)}</span>` : ''}
+        ${r.lga ? `<span class="meta-dot">·</span><span class="meta-location">🏘 ${escHtml(r.lga)}</span>` : ''}
+        ${r.state ? `<span class="meta-dot">·</span><span class="meta-location">🗺 ${escHtml(r.state)}</span>` : ''}
+        ${r.sellerPlace ? `<span class="meta-dot">·</span><span class="meta-seller">🏬 ${escHtml(r.sellerPlace)}</span>` : ''}
+        ${distanceLabel}
+        <span class="meta-dot">·</span>
+        <span class="meta-time">${timeAgo(r.timestamp)}</span>
+      </div>
+      <details class="report-details">
+        <summary>Expand listing details</summary>
+        <div class="report-extra">
+          <div class="report-location">
+            <strong>Exact listing coordinates</strong>
+            <p>Lat: ${r.lat.toFixed(5)}, Lng: ${r.lng.toFixed(5)}</p>
+            <p><a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}" target="_blank" rel="noreferrer">Open in maps</a></p>
+          </div>
+          ${r.sellerContact ? `<div class="report-seller-contact"><strong>Seller contact</strong><p>${escHtml(r.sellerContact)}</p></div>` : ''}
+          ${mediaMarkup}
+          <div class="comments-panel">
+            <strong>Community notes</strong>
+            <div class="comment-list">${renderCommentList(r)}</div>
+            <div class="comment-form">
+              <textarea id="comment-input-${r.id}" placeholder="Add a comment or evidence note..."></textarea>
+              <button class="btn btn-sm btn-primary comment-submit-btn" type="button" data-report-id="${r.id}">Post comment</button>
+            </div>
+          </div>
+        </div>
+      </details>
+      <div class="vote-row">
+        <button class="vote-btn upvote" ${voteDisabled} title="${voteTitle}"
+          data-report-id="${r.id}" data-vote-type="upvote">
+          👍 ${r.upvoteCount}
+        </button>
+        <button class="vote-btn debunk" ${voteDisabled} title="${voteTitle}"
+          data-report-id="${r.id}" data-vote-type="debunk">
+          👎 ${r.debunkCount}
+        </button>
+        ${confBar}
+      </div>
+    </div>`;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Map ───────────────────────────────────────────────────────────
+function renderMap() {
+  if (!map) {
+    const initialCenter = state.userLat !== null && state.userLng !== null
+      ? [state.userLat, state.userLng]
+      : [9.0820, 8.6753];
+    const initialZoom = state.userLat !== null && state.userLng !== null ? 12 : 6;
+    map = L.map('map').setView(initialCenter, initialZoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+      subdomains: ['a', 'b', 'c'],
+    }).addTo(map);
+  }
+
+  // Clear existing markers
+  markers.forEach(m => m.remove());
+  markers = [];
+
+  if (state.reports.length === 0) {
+    map.setView([9.0820, 8.6753], 6);
+    return;
+  }
+
+  const bounds = [];
+
+  state.reports.forEach(r => {
+    const color = { in_stock: '#16a34a', limited: '#d97706', out_of_stock: '#dc2626' }[r.availability] || '#6b7280';
+
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+    });
+
+    const marker = L.marker([r.lat, r.lng], { icon }).addTo(map);
+
+    const canVote = state.token && r.userId !== state.userId;
+    const alreadyVoted = state.token && (r.upvotes.includes(state.userId) || r.debunks.includes(state.userId));
+    const voteDisabled = !state.token || !canVote || alreadyVoted ? 'disabled' : '';
+    const voteTitle = !state.token ? 'Sign in to vote' : r.userId === state.userId ? 'Own report' : alreadyVoted ? 'Already voted' : '';
+
+    const confText = r.confidence !== null ? `${r.confidence}% confidence` : 'No votes yet';
+
+    marker.bindPopup(`
+      <div class="map-popup">
+        <h4>${escHtml(r.itemName)}</h4>
+        <div class="price">${formatPrice(r.price)}</div>
+        <div style="margin:6px 0;font-size:0.8rem;">
+          <span class="avail-badge avail-${r.availability}">${availLabel(r.availability)}</span>
+        </div>
+        ${r.locationName ? `<div style="font-size:0.8rem;color:#6b7280;">📍 ${escHtml(r.locationName)}</div>` : ''}
+        <div style="font-size:0.75rem;color:#9ca3af;margin-top:4px;">${timeAgo(r.timestamp)} · 👍 ${r.upvoteCount} 👎 ${r.debunkCount} · ${confText}</div>
+        <div class="popup-vote-row">
+          <button class="btn btn-sm btn-outline" ${voteDisabled} title="${voteTitle}"
+            onclick="handleVote('${r.id}','upvote')">👍 Upvote</button>
+          <button class="btn btn-sm btn-danger" ${voteDisabled} title="${voteTitle}"
+            onclick="handleVote('${r.id}','debunk')">👎 Debunk</button>
+        </div>
+      </div>
+    `);
+
+    bounds.push([r.lat, r.lng]);
+    markers.push(marker);
+  });
+
+  if (bounds.length > 0 && !state.nearMeActive) {
+    try { map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 }); } catch {}
+  }
+}
+
+// ── Vote handler ──────────────────────────────────────────────────
+async function handleVote(reportId, voteType) {
+  if (!state.token) {
+    openModal('login-modal');
+    return;
+  }
+  try {
+    const updated = USE_FIREBASE && firebaseDb
+      ? await firebaseVote(reportId, voteType)
+      : await apiFetch('/api/vote', {
+          method: 'POST',
+          body: JSON.stringify({ reportId, voteType }),
+        });
+    const idx = state.reports.findIndex(r => r.id === reportId);
+    if (idx !== -1) state.reports[idx] = updated;
+    const allIdx = state.allReports.findIndex(r => r.id === reportId);
+    if (allIdx !== -1) state.allReports[allIdx] = updated;
+    render();
+    toast(voteType === 'upvote' ? '👍 Upvoted!' : '👎 Debunked!', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// expose for map popup onclick
+window.handleVote = handleVote;
+
+// ── View toggle ───────────────────────────────────────────────────
+function setView(v) {
+  state.view = v;
+  document.getElementById('list-view').style.display = v === 'list' ? 'grid' : 'none';
+  document.getElementById('map-view').style.display = v === 'map' ? 'block' : 'none';
+  document.getElementById('list-btn').classList.toggle('active', v === 'list');
+  document.getElementById('map-btn').classList.toggle('active', v === 'map');
+  if (v === 'map') {
+    if (!map) renderMap();
+    else {
+      setTimeout(() => { map.invalidateSize(); renderMap(); }, 0);
+    }
+  } else {
+    renderList();
+  }
+}
+
+// ── Near Me ───────────────────────────────────────────────────────
+function handleNearMe() {
+  if (state.nearMeActive) {
+    state.nearMeActive = false;
+    document.getElementById('nearme-btn').classList.remove('active-nearme');
+    document.getElementById('nearme-btn').textContent = '📍 Near Me';
+    state.reports = applyReportFilters(state.allReports);
+    render();
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    toast('Geolocation not supported by your browser.', 'error');
+    return;
+  }
+
+  toast('Requesting location…', 'info', 2000);
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      state.userLat = pos.coords.latitude;
+      state.userLng = pos.coords.longitude;
+      state.nearMeActive = true;
+      document.getElementById('nearme-btn').classList.add('active-nearme');
+      document.getElementById('nearme-btn').textContent = '✕ Near Me';
+      if (map) map.setView([state.userLat, state.userLng], 13);
+      state.reports = applyReportFilters(state.allReports);
+      render();
+      toast('Showing reports within 5 km of your location.', 'success');
+    },
+    err => {
+      toast('Could not get location: ' + err.message, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+}
+
+function handleNationwide() {
+  state.nearMeActive = false;
+  const nearBtn = document.getElementById('nearme-btn');
+  if (nearBtn) {
+    nearBtn.classList.remove('active-nearme');
+    nearBtn.textContent = 'ðŸ“ Near Me';
+  }
+  state.reports = applyReportFilters(state.allReports);
+  render();
+  if (map && state.view === 'map') renderMap();
+  toast('Showing nationwide listings for comparison.', 'success');
+}
+
+// ── GPS button in report modal ────────────────────────────────────
+let pendingLat = null;
+let pendingLng = null;
+let pendingMedia = [];
+
+document.getElementById('get-location-btn').addEventListener('click', () => {
+  if (!navigator.geolocation) {
+    toast('Geolocation not supported.', 'error');
+    return;
+  }
+  document.getElementById('gps-status').textContent = 'Getting location…';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      pendingLat = pos.coords.latitude;
+      pendingLng = pos.coords.longitude;
+      document.getElementById('gps-status').textContent =
+        `✅ GPS: ${pendingLat.toFixed(5)}, ${pendingLng.toFixed(5)}`;
+    },
+    err => {
+      document.getElementById('gps-status').textContent = 'Failed: ' + err.message;
+      toast('Location error: ' + err.message, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+});
+
+document.getElementById('report-media')?.addEventListener('change', async event => {
+  const files = event.target.files;
+  if (!files || !files.length) return;
+  pendingMedia = await readFilesAsDataUrls(files);
+  const preview = document.getElementById('report-media-preview');
+  if (preview) {
+    preview.innerHTML = pendingMedia
+      .map(item => `<img class="media-thumb" src="${item.url}" alt="${escHtml(item.name)}" />`)
+      .join('');
+  }
+});
+
+// ── Modals ────────────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).style.display = 'flex';
+  clearModalErrors();
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+function clearModalErrors() {
+  document.querySelectorAll('.form-error').forEach(el => {
+    el.textContent = '';
+    el.classList.remove('visible');
+  });
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+function readFilesAsDataUrls(files) {
+  return Promise.all(Array.from(files).map(file => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ name: file.name, url: reader.result });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }));
+}
+
+function createCommentHTML(comment, reportId, replies = []) {
+  const repliesHTML = replies.length
+    ? replies.map(reply => `
+        <div class="comment-item reply-container">
+          <div class="comment-meta">${escHtml(reply.userEmail || 'User')} · ${timeAgo(reply.timestamp)}</div>
+          <div class="comment-text">${escHtml(reply.text)}</div>
+        </div>
+      `).join('')
+    : '';
+
+  return `
+    <div class="comment-item">
+      <div class="comment-meta">${escHtml(comment.userEmail || 'User')} · ${timeAgo(comment.timestamp)}</div>
+      <div class="comment-text">${escHtml(comment.text)}</div>
+      <div class="comment-actions">
+        <button class="btn btn-ghost btn-sm reply-toggle-btn" type="button" data-report-id="${reportId}" data-comment-id="${comment.id}">Reply</button>
+      </div>
+      <div class="reply-form" id="reply-form-${reportId}-${comment.id}">
+        <textarea id="reply-input-${reportId}-${comment.id}" placeholder="Write a reply..."></textarea>
+        <div class="comment-actions">
+          <button class="btn btn-sm btn-primary reply-submit-btn" type="button" data-report-id="${reportId}" data-comment-id="${comment.id}">Post reply</button>
+        </div>
+      </div>
+      ${repliesHTML}
+    </div>
+  `;
+}
+
+function renderCommentList(report) {
+  const comments = report.comments || [];
+  if (!comments.length) {
+    return '<div class="comment-item">No comments yet. Be the first to add evidence or ask a question.</div>';
+  }
+
+  const repliesByParent = comments.reduce((map, comment) => {
+    if (comment.parentId) {
+      map[comment.parentId] = map[comment.parentId] || [];
+      map[comment.parentId].push(comment);
+    }
+    return map;
+  }, {});
+
+  const rootComments = comments.filter(comment => !comment.parentId);
+  if (!rootComments.length) {
+    return '<div class="comment-item">No top-level comments yet.</div>';
+  }
+
+  return rootComments.map(comment => createCommentHTML(comment, report.id, repliesByParent[comment.id] || [])).join('');
+}
+
+function renderAccountSection() {
+  const section = document.getElementById('account-section');
+  if (!state.token) {
+    section.style.display = 'none';
+    return;
+  }
+
+  const myReports = state.allReports.filter(r => r.userId === state.userId);
+  const totalVotes = myReports.reduce((sum, report) => sum + report.upvotes.length + report.debunks.length, 0);
+  const upvotes = myReports.reduce((sum, report) => sum + report.upvotes.length, 0);
+  const trustScore = totalVotes ? Math.round((upvotes / totalVotes) * 100) : 0;
+  const locationText = state.userLat !== null && state.userLng !== null
+    ? `GPS ${state.userLat.toFixed(4)}, ${state.userLng.toFixed(4)}`
+    : 'Not set';
+
+  document.getElementById('account-owner').textContent = state.email || 'Your profile';
+  document.getElementById('account-trust').textContent = `${trustScore}%`;
+  document.getElementById('account-listings-count').textContent = myReports.length;
+  document.getElementById('account-location').textContent = locationText;
+  document.getElementById('account-votes-count').textContent = totalVotes;
+
+  const listingsContainer = document.getElementById('account-listings');
+  if (myReports.length === 0) {
+    listingsContainer.innerHTML = '<div class="account-listing-item">No listings yet. Share a price report to start building trust.</div>';
+  } else {
+    listingsContainer.innerHTML = myReports.slice(0, 3).map(report => `
+      <div class="account-listing-item">
+        <strong>${escHtml(report.itemName)} — ${formatPrice(report.price)}</strong>
+        <p>${report.locationName ? escHtml(report.locationName) : 'Location details available when expanded.'}</p>
+        <p>${availLabel(report.availability)} · ${timeAgo(report.timestamp)}</p>
+      </div>
+    `).join('');
+  }
+  section.style.display = 'block';
+}
+
+async function saveReportComment(reportId, text, parentId = null) {
+  if (!text.trim()) return;
+  if (!state.token) {
+    openModal('login-modal');
+    return;
+  }
+
+  const payload = { text: text.trim(), parentId };
+  let updatedReport;
+
+  if (USE_FIREBASE && firebaseDb) {
+    const report = state.reports.find(r => r.id === reportId);
+    if (!report) throw new Error('Report not found');
+    report.comments = report.comments || [];
+    const comment = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      userId: state.userId,
+      userEmail: state.email,
+      text: payload.text,
+      timestamp: new Date().toISOString(),
+      replies: [],
+    };
+    if (parentId) {
+      const parent = report.comments.find(c => c.id === parentId);
+      if (parent) {
+        parent.replies = parent.replies || [];
+        parent.replies.push(comment);
+      }
+    } else {
+      report.comments.unshift(comment);
+    }
+    updatedReport = report;
+  } else {
+    updatedReport = await apiFetch(`/api/reports/${reportId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  const idx = state.reports.findIndex(r => r.id === reportId);
+  if (idx !== -1) state.reports[idx] = enrichReport(updatedReport);
+  const allIdx = state.allReports.findIndex(r => r.id === reportId);
+  if (allIdx !== -1) state.allReports[allIdx] = enrichReport(updatedReport);
+  render();
+}
+
+// Close buttons
+document.querySelectorAll('[data-close]').forEach(btn => {
+  btn.addEventListener('click', () => closeModal(btn.dataset.close));
+});
+
+// Close on backdrop click
+document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+  backdrop.addEventListener('click', e => {
+    if (e.target === backdrop) closeModal(backdrop.id);
+  });
+});
+
+// Switch links
+document.getElementById('switch-to-register').addEventListener('click', () => {
+  closeModal('login-modal');
+  openModal('register-modal');
+});
+document.getElementById('switch-to-login').addEventListener('click', () => {
+  closeModal('register-modal');
+  openModal('login-modal');
+});
+
+document.getElementById('hero-report-btn')?.addEventListener('click', () => {
+  document.getElementById('report-btn')?.click();
+});
+
+document.getElementById('hero-login-btn')?.addEventListener('click', () => {
+  openModal('login-modal');
+});
+
+// ── Login form ────────────────────────────────────────────────────
+document.getElementById('login-submit').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) {
+    showError('login-error', 'Please enter your email and password.');
+    return;
+  }
+  const btn = document.getElementById('login-submit');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  try {
+    const data = USE_FIREBASE
+      ? await firebaseLogin(email, password)
+      : await apiFetch('/api/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+        });
+    setSession(data.token, data.email, data.userId);
+    closeModal('login-modal');
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    renderAuthArea();
+    loadReports();
+    toast('Welcome back, ' + data.email + '!', 'success');
+  } catch (err) {
+    showError('login-error', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+});
+
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('login-submit').click();
+});
+
+document.querySelectorAll('.google-auth-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const textSpan = btn.querySelector('.btn-text') || btn;
+    const errorContainer = btn.closest('.modal-body')?.querySelector('.form-error');
+    const errorId = errorContainer ? errorContainer.id : 'login-error';
+
+    btn.disabled = true;
+    textSpan.textContent = 'Signing in…';
+    try {
+      if (!USE_FIREBASE) {
+        throw new Error('Google sign-in requires Firebase configuration.');
+      }
+      const data = await firebaseSignInWithGoogle();
+      setSession(data.token, data.email, data.userId);
+      closeModal('login-modal');
+      closeModal('register-modal');
+      renderAuthArea();
+      await loadReports();
+      toast('Welcome back, ' + data.email + '!', 'success');
+    } catch (err) {
+      showError(errorId, err.message);
+    } finally {
+      btn.disabled = false;
+      textSpan.textContent = 'Continue with Google';
+    }
+  });
+});
+
+// ── Register form ─────────────────────────────────────────────────
+document.getElementById('register-submit').addEventListener('click', async () => {
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+  if (!email || !password) {
+    showError('register-error', 'Please fill in all fields.');
+    return;
+  }
+  if (password.length < 6) {
+    showError('register-error', 'Password must be at least 6 characters.');
+    return;
+  }
+  const btn = document.getElementById('register-submit');
+  btn.disabled = true;
+  btn.textContent = 'Creating account…';
+  try {
+    const data = USE_FIREBASE
+      ? await firebaseRegister(email, password)
+      : await apiFetch('/api/register', {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+        });
+    setSession(data.token, data.email, data.userId);
+    closeModal('register-modal');
+    document.getElementById('register-email').value = '';
+    document.getElementById('register-password').value = '';
+    renderAuthArea();
+    loadReports();
+    toast('Account created! Welcome aboard 🎉', 'success');
+  } catch (err) {
+    showError('register-error', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+  }
+});
+
+document.getElementById('register-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('register-submit').click();
+});
+
+// ── Report form ───────────────────────────────────────────────────
+document.getElementById('report-btn').addEventListener('click', () => {
+  if (!state.token) { openModal('login-modal'); return; }
+  pendingLat = null;
+  pendingLng = null;
+  document.getElementById('gps-status').textContent = state.userLat !== null ? '✅ Using your current location' : 'GPS not set';
+  document.getElementById('report-item').value = '';
+  document.getElementById('report-price').value = '';
+  document.getElementById('report-measurement').value = 'L';
+  document.getElementById('report-measurement-custom').value = '';
+  document.getElementById('report-avail').value = 'in_stock';
+  document.getElementById('report-location-name').value = '';
+  document.getElementById('report-state').value = '';
+  document.getElementById('report-lga').value = '';
+  document.getElementById('report-seller-place').value = '';
+  document.getElementById('report-seller-contact').value = '';
+  openModal('report-modal');
+});
+
+document.getElementById('report-submit').addEventListener('click', async () => {
+  const itemName = document.getElementById('report-item').value.trim();
+  const price = document.getElementById('report-price').value;
+  const availability = document.getElementById('report-avail').value;
+  const locationName = document.getElementById('report-location-name').value.trim();
+  const stateName = document.getElementById('report-state').value;
+  const lga = document.getElementById('report-lga').value.trim();
+  const measurement = document.getElementById('report-measurement').value;
+  const customMeasurement = document.getElementById('report-measurement-custom').value.trim();
+  const measurementLabel = measurement === 'custom' ? customMeasurement || 'Custom' : measurement;
+  const sellerPlace = document.getElementById('report-seller-place').value.trim();
+  const sellerContact = document.getElementById('report-seller-contact').value.trim();
+
+  if (!itemName) { showError('report-error', 'Item name is required.'); return; }
+  if (!price || isNaN(Number(price)) || Number(price) < 0) {
+    showError('report-error', 'Enter a valid price.');
+    return;
+  }
+
+  let lat = pendingLat;
+  let lng = pendingLng;
+
+  if (lat === null || lng === null) {
+    if (state.userLat !== null) {
+      lat = state.userLat;
+      lng = state.userLng;
+    } else {
+      showError('report-error', 'Please tap 📍 GPS to set your location.');
+      return;
+    }
+  }
+
+  const btn = document.getElementById('report-submit');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const reportPayload = {
+      itemName,
+      price: Number(price),
+      measurement: measurementLabel,
+      availability,
+      lat,
+      lng,
+      locationName,
+      state: stateName,
+      lga,
+      sellerPlace,
+      sellerContact,
+      media: pendingMedia,
+    };
+
+    if (USE_FIREBASE && firebaseDb) {
+      await firebaseSubmitReport(reportPayload);
+    } else {
+      await apiFetch('/api/reports', {
+        method: 'POST',
+        body: JSON.stringify(reportPayload),
+      });
+    }
+    closeModal('report-modal');
+    pendingMedia = [];
+    document.getElementById('report-media-preview').innerHTML = '';
+    await loadReports();
+    toast('Price report submitted! 🙌', 'success');
+  } catch (err) {
+    showError('report-error', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Submit Report';
+  }
+});
+
+// ── Search ────────────────────────────────────────────────────────
+let searchTimeout;
+document.getElementById('search-input').addEventListener('input', e => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    state.searchQuery = e.target.value.trim();
+    state.reports = applyReportFilters(state.allReports);
+    render();
+  }, 350);
+});
+
+// ── View toggle buttons ────────────────────────────────────────────
+document.getElementById('list-btn').addEventListener('click', () => setView('list'));
+document.getElementById('map-btn').addEventListener('click', () => setView('map'));
+document.getElementById('nearme-btn').addEventListener('click', handleNearMe);
+document.getElementById('nationwide-btn').addEventListener('click', handleNationwide);
+document.getElementById('compare-btn')?.addEventListener('click', () => {
+  state.comparisonOpen = !state.comparisonOpen;
+  if (state.comparisonOpen && !state.comparisonItem) {
+    state.comparisonItem = state.searchQuery;
+  }
+  render();
+});
+document.getElementById('comparison-close')?.addEventListener('click', () => {
+  state.comparisonOpen = false;
+  render();
+});
+document.getElementById('compare-item-input')?.addEventListener('input', e => {
+  state.comparisonItem = e.target.value.trim();
+  state.comparisonLocations = [];
+  renderComparisonPanel();
+});
+document.getElementById('compare-location-select')?.addEventListener('change', e => {
+  const key = e.target.value;
+  if (key && !state.comparisonLocations.includes(key)) {
+    state.comparisonLocations = [...state.comparisonLocations, key].slice(0, 6);
+    renderComparisonPanel();
+  }
+  e.target.value = '';
+});
+document.getElementById('comparison-selected')?.addEventListener('click', e => {
+  const chip = e.target.closest('.comparison-chip');
+  if (!chip) return;
+  state.comparisonLocations = state.comparisonLocations.filter(key => key !== chip.dataset.locationKey);
+  renderComparisonPanel();
+});
+
+// ── Initial load ──────────────────────────────────────────────────
+(async () => {
+  await initFirebase();
+  if (state.token && !USE_FIREBASE) {
+    const valid = await verifyToken();
+    if (!valid) toast('Session expired. Please sign in again.', 'info');
+  }
+  renderAuthArea();
+  await requestUserLocation();
+  await loadReports();
+  renderMap();
+  setView('list');
+})();

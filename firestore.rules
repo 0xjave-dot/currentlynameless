@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /reports/{reportId} {
+      allow read: if true;
+
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.itemName is string
+        && request.resource.data.price is number
+        && request.resource.data.availability in ['in_stock', 'limited', 'out_of_stock']
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number
+        && request.resource.data.timestamp is string
+        && request.resource.data.upvotes is list
+        && request.resource.data.debunks is list
+        && request.resource.data.locationName is string;
+
+      allow update: if request.auth != null
+        && request.auth.uid != resource.data.userId
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.itemName == resource.data.itemName
+        && request.resource.data.price == resource.data.price
+        && request.resource.data.availability == resource.data.availability
+        && request.resource.data.lat == resource.data.lat
+        && request.resource.data.lng == resource.data.lng
+        && request.resource.data.locationName == resource.data.locationName
+        && request.resource.data.timestamp == resource.data.timestamp
+        && (isValidUpvoteUpdate() || isValidDebunkUpdate());
+
+      allow delete: if false;
+
+      function isValidUpvoteUpdate() {
+        return request.resource.data.upvotes.size() == resource.data.upvotes.size() + 1
+          && request.resource.data.upvotes.hasAll(resource.data.upvotes)
+          && !resource.data.upvotes.hasAny([request.auth.uid])
+          && request.resource.data.upvotes.hasAny([request.auth.uid])
+          && request.resource.data.debunks == resource.data.debunks;
+      }
+
+      function isValidDebunkUpdate() {
+        return request.resource.data.debunks.size() == resource.data.debunks.size() + 1
+          && request.resource.data.debunks.hasAll(resource.data.debunks)
+          && !resource.data.debunks.hasAny([request.auth.uid])
+          && request.resource.data.debunks.hasAny([request.auth.uid])
+          && request.resource.data.upvotes == resource.data.upvotes;
+      }
+    }
+  }
+}

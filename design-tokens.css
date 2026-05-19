@@ -1,0 +1,50 @@
+:root {
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-heading: 'Nunito', sans-serif;
+  --clay-canvas: #f4f1fa;
+  --clay-foreground: #332f3a;
+  --clay-muted: #635f69;
+  --clay-primary: #7c3aed;
+  --clay-primary-light: #a78bfa;
+  --clay-secondary: #db2777;
+  --clay-tertiary: #0ea5e9;
+  --clay-success: #10b981;
+  --clay-warning: #f59e0b;
+  --clay-card: rgba(255,255,255,0.94);
+  --clay-card-soft: rgba(242,238,251,0.92);
+  --clay-border: rgba(124,58,237,0.16);
+  --clay-shadow: 16px 20px 44px rgba(103,80,164,0.11), -10px -10px 26px rgba(255,255,255,0.9), inset 4px 4px 12px rgba(124,58,237,0.06), inset -4px -4px 12px rgba(255,255,255,0.75);
+  --clay-shadow-strong: 20px 24px 52px rgba(103,80,164,0.22), -14px -14px 34px rgba(255,255,255,0.9), inset 6px 6px 16px rgba(124,58,237,0.08), inset -6px -6px 16px rgba(255,255,255,0.82);
+  --clay-pressed: inset 10px 10px 22px rgba(148,116,255,0.14), inset -10px -10px 22px rgba(255,255,255,0.82);
+  --radius-base: 20px;
+  --radius-lg: 32px;
+  --radius-xl: 48px;
+  --radius-3xl: 60px;
+  --max-content-width: 1200px;
+}
+
+.clay-card {
+  background: var(--clay-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--clay-border);
+  box-shadow: var(--clay-shadow);
+}
+
+.clay-card-soft {
+  background: var(--clay-card-soft);
+  border-radius: var(--radius-2xl);
+  border: 1px solid rgba(124,58,237,0.1);
+  box-shadow: var(--clay-shadow-strong);
+}
+
+.clay-input {
+  background: rgba(242,238,251,0.95);
+  border: none;
+  border-radius: 24px;
+  box-shadow: inset 8px 8px 18px rgba(124,58,237,0.07), inset -8px -8px 18px rgba(255,255,255,0.9);
+}
+
+.clay-button {
+  border-radius: var(--radius-base);
+  box-shadow: 10px 14px 30px rgba(124,58,237,0.18), -8px -8px 20px rgba(255,255,255,0.85);
+}
