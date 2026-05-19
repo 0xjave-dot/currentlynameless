@@ -130,15 +130,22 @@ header {
 
 .logo-name {
   font-size: 1.6rem;
-  font-weight: 1000;
+  font-weight: 700;
   color: #7c3aed;
-  font-family: 'Borsok', 'Montserrat', 'Inter', sans-serif;
+  font-family: 'Fredoka', 'Borsok', 'Poppins', 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+  -webkit-font-smoothing: antialiased;
+  font-smoothing: antialiased;
 }
 
 .logo-accent {
   font-size: 1.6rem;
   color: #7ed957;
-  font-family: 'Borsok', 'Montserrat', 'Inter', sans-serif;
+  font-weight: 700;
+  font-family: 'Fredoka', 'Borsok', 'Poppins', 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+  -webkit-font-smoothing: antialiased;
+  font-smoothing: antialiased;
 }
 
 .header-spacer { flex: 1; }
