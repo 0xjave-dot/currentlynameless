@@ -1,4 +1,4 @@
-# Currently Nameless 🇳🇬
+# Last Price 🇳🇬
 
 **Real-time crowdsourced price and availability tracker for Nigeria.**
 
@@ -32,7 +32,7 @@ Open `http://localhost:3000` in your browser.
 ## Project Structure
 
 ```
-currently-nameless/
+last-price/
 ├── server.js       # Express API server
 ├── index.html      # Single-page frontend
 ├── style.css       # Responsive stylesheet
@@ -52,6 +52,8 @@ currently-nameless/
 | POST | `/api/register` | ❌ | Register new user, returns JWT |
 | POST | `/api/login` | ❌ | Login, returns JWT |
 | GET | `/api/verify` | ✅ | Verify token validity |
+| GET | `/api/profile` | ✅ | Fetch the signed-in user's profile |
+| PUT | `/api/profile` | ✅ | Update name and location profile fields |
 | GET | `/api/reports` | ❌ | List reports (supports `search`, `lat`, `lng`, `radius`) |
 | POST | `/api/reports` | ✅ | Submit a price report |
 | POST | `/api/vote` | ✅ | Upvote or debunk a report |
@@ -63,7 +65,7 @@ currently-nameless/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
-| `JWT_SECRET` | `currently-nameless-secret-change-in-production` | **Override this in production!** |
+| `JWT_SECRET` | `last-price-secret-change-in-production` | **Override this in production!** |
 
 ## Firebase
 
@@ -165,7 +167,7 @@ Railway can run Node apps, but its free access is credit/trial based. As of the 
 
 Data is stored in two flat JSON files in the project root:
 
-- **`users.json`** — `{ id, email, hashedPassword, createdAt }`
+- **`users.json`** — `{ id, email, hashedPassword, profile, createdAt }`
 - **`reports.json`** — `{ id, userId, itemName, price, availability, lat, lng, locationName, timestamp, upvotes[], debunks[] }`
 
 Confidence score is computed on the fly: `(upvotes / totalVotes) * 100`.

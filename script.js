@@ -1,6 +1,6 @@
 /* ================================================================
-   Currently Nameless — Frontend Script
-   ================================================================ */
+  Last Price — Frontend Script
+  ================================================================ */
 
 const firebaseConfig = window.firebaseConfig || null;
 const USE_FIREBASE = !!(
@@ -17,9 +17,10 @@ const API = '';  // same origin
 
 // ── State ─────────────────────────────────────────────────────────
 let state = {
-  token: localStorage.getItem('cn_token') || null,
-  email: localStorage.getItem('cn_email') || null,
-  userId: localStorage.getItem('cn_userId') || null,
+  token: localStorage.getItem('lp_token') || null,
+  email: localStorage.getItem('lp_email') || null,
+  userId: localStorage.getItem('lp_userId') || null,
+  accountProfile: null,
   allReports: [],
   reports: [],
   view: 'list',
@@ -123,6 +124,84 @@ function getLocationGroups(reports) {
   }, {});
 
   return Object.values(groups).sort((a, b) => b.reports.length - a.reports.length || a.label.localeCompare(b.label));
+}
+
+function accountProfileKey(userId = state.userId) {
+  return userId ? `lp_profile_${userId}` : null;
+}
+
+function deriveNameFromEmail(email) {
+  if (!email) return 'Price tracker';
+  const name = email.split('@')[0].replace(/[._-]+/g, ' ').trim();
+  return name ? name.replace(/\b\w/g, letter => letter.toUpperCase()) : 'Price tracker';
+}
+
+function defaultAccountProfile(email = state.email) {
+  return {
+    name: deriveNameFromEmail(email),
+    location: '',
+    state: '',
+    lga: '',
+  };
+}
+
+function loadAccountProfile(userId = state.userId, email = state.email) {
+  const key = accountProfileKey(userId);
+  if (!key) return null;
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || '{}');
+    return { ...defaultAccountProfile(email), ...saved };
+  } catch {
+    return defaultAccountProfile(email);
+  }
+}
+
+function saveAccountProfile(profile) {
+  const key = accountProfileKey();
+  if (!key) return;
+  state.accountProfile = {
+    ...defaultAccountProfile(),
+    ...profile,
+  };
+  localStorage.setItem(key, JSON.stringify(state.accountProfile));
+}
+
+async function persistAccountProfile(profile) {
+  saveAccountProfile(profile);
+  if (!USE_FIREBASE && state.token) {
+    const updated = await apiFetch('/api/profile', {
+      method: 'PUT',
+      body: JSON.stringify(state.accountProfile),
+    });
+    saveAccountProfile(updated.profile || state.accountProfile);
+  }
+  return state.accountProfile;
+}
+
+function getAccountStats() {
+  const myReports = state.allReports.filter(r => r.userId === state.userId);
+  const totalVotes = myReports.reduce((sum, report) => sum + report.upvotes.length + report.debunks.length, 0);
+  const upvotes = myReports.reduce((sum, report) => sum + report.upvotes.length, 0);
+  const debunks = myReports.reduce((sum, report) => sum + report.debunks.length, 0);
+  const trustScore = totalVotes ? Math.round((upvotes / totalVotes) * 100) : 0;
+  const verifiedListings = myReports.filter(report => report.confidence !== null && report.confidence >= 60).length;
+
+  return {
+    myReports,
+    totalVotes,
+    upvotes,
+    debunks,
+    trustScore,
+    verifiedListings,
+  };
+}
+
+function accountLocationText(profile = state.accountProfile) {
+  const parts = [profile?.location, profile?.lga, profile?.state].filter(Boolean);
+  if (parts.length) return parts.join(', ');
+  if (hasUserLocation()) return `GPS ${state.userLat.toFixed(4)}, ${state.userLng.toFixed(4)}`;
+  return 'Not set';
 }
 
 // ── Toast ─────────────────────────────────────────────────────────
@@ -346,22 +425,27 @@ async function loadReports() {
 }
 
 // ── Auth flow ─────────────────────────────────────────────────────
-function setSession(token, email, userId) {
+function setSession(token, email, userId, profile = null) {
   state.token = token;
   state.email = email;
   state.userId = userId;
-  localStorage.setItem('cn_token', token);
-  localStorage.setItem('cn_email', email);
-  localStorage.setItem('cn_userId', userId);
+  state.accountProfile = profile ? { ...defaultAccountProfile(email), ...profile } : loadAccountProfile(userId, email);
+  if (profile) {
+    localStorage.setItem(`lp_profile_${userId}`, JSON.stringify(state.accountProfile));
+  }
+  localStorage.setItem('lp_token', token);
+  localStorage.setItem('lp_email', email);
+  localStorage.setItem('lp_userId', userId);
 }
 
 function clearSession() {
   state.token = null;
   state.email = null;
   state.userId = null;
-  localStorage.removeItem('cn_token');
-  localStorage.removeItem('cn_email');
-  localStorage.removeItem('cn_userId');
+  state.accountProfile = null;
+  localStorage.removeItem('lp_token');
+  localStorage.removeItem('lp_email');
+  localStorage.removeItem('lp_userId');
 }
 
 async function verifyToken() {
@@ -376,7 +460,11 @@ async function verifyToken() {
 
   if (!state.token) return false;
   try {
-    await apiFetch('/api/verify');
+    const data = await apiFetch('/api/verify');
+    if (data.profile) {
+      state.accountProfile = { ...defaultAccountProfile(state.email), ...data.profile };
+      localStorage.setItem(`lp_profile_${state.userId}`, JSON.stringify(state.accountProfile));
+    }
     return true;
   } catch {
     clearSession();
@@ -404,10 +492,20 @@ function renderAuthArea() {
   const reportBtn = document.getElementById('report-btn');
   const heroLoginBtn = document.getElementById('hero-login-btn');
   if (state.token) {
+    const profile = state.accountProfile || loadAccountProfile();
+    state.accountProfile = profile;
+    const displayName = profile?.name || deriveNameFromEmail(state.email);
     el.innerHTML = `
-      <span class="user-email">${state.email}</span>
+      <button class="account-menu-btn" id="account-menu-btn" type="button">
+        <span class="account-avatar">${escHtml(displayName).slice(0, 1).toUpperCase()}</span>
+        <span class="account-menu-copy">
+          <strong>${escHtml(displayName)}</strong>
+          <span>${escHtml(state.email || '')}</span>
+        </span>
+      </button>
       <button class="btn btn-ghost btn-sm" id="logout-btn">Sign Out</button>
     `;
+    document.getElementById('account-menu-btn').addEventListener('click', () => openModal('account-modal'));
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
     reportBtn.style.display = 'inline-flex';
     if (heroLoginBtn) heroLoginBtn.style.display = 'none';
@@ -953,6 +1051,8 @@ document.getElementById('report-media')?.addEventListener('change', async event 
 
 // ── Modals ────────────────────────────────────────────────────────
 function openModal(id) {
+  if (id === 'account-modal') renderAccountModal();
+  if (id === 'profile-modal') populateProfileForm();
   document.getElementById(id).style.display = 'flex';
   clearModalErrors();
 }
@@ -1042,15 +1142,11 @@ function renderAccountSection() {
     return;
   }
 
-  const myReports = state.allReports.filter(r => r.userId === state.userId);
-  const totalVotes = myReports.reduce((sum, report) => sum + report.upvotes.length + report.debunks.length, 0);
-  const upvotes = myReports.reduce((sum, report) => sum + report.upvotes.length, 0);
-  const trustScore = totalVotes ? Math.round((upvotes / totalVotes) * 100) : 0;
-  const locationText = state.userLat !== null && state.userLng !== null
-    ? `GPS ${state.userLat.toFixed(4)}, ${state.userLng.toFixed(4)}`
-    : 'Not set';
+  const profile = state.accountProfile || loadAccountProfile();
+  const { myReports, totalVotes, trustScore } = getAccountStats();
+  const locationText = accountLocationText(profile);
 
-  document.getElementById('account-owner').textContent = state.email || 'Your profile';
+  document.getElementById('account-owner').textContent = profile?.name || state.email || 'Your profile';
   document.getElementById('account-trust').textContent = `${trustScore}%`;
   document.getElementById('account-listings-count').textContent = myReports.length;
   document.getElementById('account-location').textContent = locationText;
@@ -1069,6 +1165,61 @@ function renderAccountSection() {
     `).join('');
   }
   section.style.display = 'block';
+}
+
+function renderAccountModal() {
+  if (!state.token) return;
+  const profile = state.accountProfile || loadAccountProfile();
+  state.accountProfile = profile;
+  const { myReports, totalVotes, upvotes, debunks, trustScore, verifiedListings } = getAccountStats();
+  const locationText = accountLocationText(profile);
+
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+
+  setText('account-modal-name', profile?.name || deriveNameFromEmail(state.email));
+  setText('account-modal-email', state.email || '');
+  setText('account-modal-location', locationText);
+  setText('account-modal-avatar', (profile?.name || state.email || 'C').slice(0, 1).toUpperCase());
+  setText('account-modal-trust', `${trustScore}%`);
+  setText('account-modal-listings', myReports.length);
+  setText('account-modal-verified', verifiedListings);
+  setText('account-modal-votes', totalVotes);
+  setText('account-modal-upvotes', upvotes);
+  setText('account-modal-debunks', debunks);
+
+  const listings = document.getElementById('account-modal-listing-list');
+  if (!listings) return;
+
+  if (!myReports.length) {
+    listings.innerHTML = `
+      <div class="account-empty">
+        <strong>No listings yet</strong>
+        <p>Report a price to start building your account history and trust score.</p>
+      </div>`;
+    return;
+  }
+
+  listings.innerHTML = myReports.slice(0, 5).map(report => `
+    <div class="account-listing-item">
+      <strong>${escHtml(report.itemName)} - ${formatPrice(report.price)}${report.measurement ? `/${escHtml(report.measurement)}` : ''}</strong>
+      <p>${escHtml(report.locationName || report.lga || report.state || 'Location details available')}</p>
+      <p>${availLabel(report.availability)} · ${timeAgo(report.timestamp)} · ${report.confidence !== null ? `${report.confidence}% trust` : 'No votes yet'}</p>
+    </div>
+  `).join('');
+}
+
+function populateProfileForm() {
+  if (!state.token) return;
+  const profile = state.accountProfile || loadAccountProfile();
+  state.accountProfile = profile;
+
+  document.getElementById('profile-name').value = profile?.name || '';
+  document.getElementById('profile-location').value = profile?.location || '';
+  document.getElementById('profile-state').value = profile?.state || '';
+  document.getElementById('profile-lga').value = profile?.lga || '';
 }
 
 async function saveReportComment(reportId, text, parentId = null) {
@@ -1148,6 +1299,51 @@ document.getElementById('hero-login-btn')?.addEventListener('click', () => {
 });
 
 // ── Login form ────────────────────────────────────────────────────
+document.getElementById('edit-profile-btn')?.addEventListener('click', () => {
+  closeModal('account-modal');
+  openModal('profile-modal');
+});
+
+document.getElementById('account-report-btn')?.addEventListener('click', () => {
+  closeModal('account-modal');
+  document.getElementById('report-btn')?.click();
+});
+
+document.getElementById('account-signout-btn')?.addEventListener('click', () => {
+  closeModal('account-modal');
+  handleLogout();
+});
+
+document.getElementById('profile-save-btn')?.addEventListener('click', async () => {
+  const name = document.getElementById('profile-name').value.trim();
+  if (!name) {
+    showError('profile-error', 'Please enter the name you want shown on your account.');
+    return;
+  }
+
+  const btn = document.getElementById('profile-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  try {
+    await persistAccountProfile({
+      name,
+      location: document.getElementById('profile-location').value.trim(),
+      state: document.getElementById('profile-state').value.trim(),
+      lga: document.getElementById('profile-lga').value.trim(),
+    });
+    closeModal('profile-modal');
+    renderAuthArea();
+    renderAccountModal();
+    openModal('account-modal');
+    toast('Profile updated.', 'success');
+  } catch (err) {
+    showError('profile-error', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save profile';
+  }
+});
+
 document.getElementById('login-submit').addEventListener('click', async () => {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
@@ -1165,7 +1361,7 @@ document.getElementById('login-submit').addEventListener('click', async () => {
           method: 'POST',
           body: JSON.stringify({ email, password }),
         });
-    setSession(data.token, data.email, data.userId);
+    setSession(data.token, data.email, data.userId, data.profile);
     closeModal('login-modal');
     document.getElementById('login-email').value = '';
     document.getElementById('login-password').value = '';
@@ -1197,7 +1393,7 @@ document.querySelectorAll('.google-auth-btn').forEach(btn => {
         throw new Error('Google sign-in requires Firebase configuration.');
       }
       const data = await firebaseSignInWithGoogle();
-      setSession(data.token, data.email, data.userId);
+      setSession(data.token, data.email, data.userId, data.profile);
       closeModal('login-modal');
       closeModal('register-modal');
       renderAuthArea();
@@ -1214,9 +1410,11 @@ document.querySelectorAll('.google-auth-btn').forEach(btn => {
 
 // ── Register form ─────────────────────────────────────────────────
 document.getElementById('register-submit').addEventListener('click', async () => {
+  const name = document.getElementById('register-name').value.trim();
+  const location = document.getElementById('register-location').value.trim();
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value;
-  if (!email || !password) {
+  if (!name || !email || !password) {
     showError('register-error', 'Please fill in all fields.');
     return;
   }
@@ -1232,10 +1430,13 @@ document.getElementById('register-submit').addEventListener('click', async () =>
       ? await firebaseRegister(email, password)
       : await apiFetch('/api/register', {
           method: 'POST',
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email, password, name, location }),
         });
-    setSession(data.token, data.email, data.userId);
+    setSession(data.token, data.email, data.userId, data.profile);
+    saveAccountProfile({ ...state.accountProfile, name, location });
     closeModal('register-modal');
+    document.getElementById('register-name').value = '';
+    document.getElementById('register-location').value = '';
     document.getElementById('register-email').value = '';
     document.getElementById('register-password').value = '';
     renderAuthArea();

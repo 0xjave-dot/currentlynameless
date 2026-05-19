@@ -8,7 +8,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'currently-nameless-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'last-price-secret-change-in-production';
 const SALT_ROUNDS = 10;
 const JWT_EXPIRY = '7d';
 
@@ -102,9 +102,32 @@ function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function sanitizeProfile(profile = {}) {
+  return {
+    name: profile.name ? String(profile.name).trim().slice(0, 80) : '',
+    location: profile.location ? String(profile.location).trim().slice(0, 120) : '',
+    state: profile.state ? String(profile.state).trim().slice(0, 80) : '',
+    lga: profile.lga ? String(profile.lga).trim().slice(0, 80) : '',
+  };
+}
+
+function publicUser(user) {
+  const profile = sanitizeProfile(user.profile || user);
+  return {
+    id: user.id,
+    email: user.email,
+    profile: {
+      name: profile.name || user.email.split('@')[0],
+      location: profile.location,
+      state: profile.state,
+      lga: profile.lga,
+    },
+  };
+}
+
 app.post('/api/register', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, name, location, state: stateName, lga } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
@@ -127,6 +150,7 @@ app.post('/api/register', async (req, res) => {
       id: generateId(),
       email: email.toLowerCase().trim(),
       hashedPassword,
+      profile: sanitizeProfile({ name, location, state: stateName, lga }),
       createdAt: new Date().toISOString(),
     };
 
@@ -137,7 +161,7 @@ app.post('/api/register', async (req, res) => {
       expiresIn: JWT_EXPIRY,
     });
 
-    return res.status(201).json({ token, email: newUser.email, userId: newUser.id });
+    return res.status(201).json({ token, email: newUser.email, userId: newUser.id, profile: publicUser(newUser).profile });
   } catch (err) {
     console.error('Register error:', err);
     return res.status(500).json({ error: 'Internal server error' });
@@ -167,7 +191,7 @@ app.post('/api/login', async (req, res) => {
       expiresIn: JWT_EXPIRY,
     });
 
-    return res.status(200).json({ token, email: user.email, userId: user.id });
+    return res.status(200).json({ token, email: user.email, userId: user.id, profile: publicUser(user).profile });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ error: 'Internal server error' });
@@ -175,7 +199,42 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.get('/api/verify', authMiddleware, (req, res) => {
-  return res.status(200).json({ valid: true, userId: req.userId, email: req.userEmail });
+  const users = readUsers();
+  const user = users.find((u) => u.id === req.userId);
+  return res.status(200).json({
+    valid: true,
+    userId: req.userId,
+    email: req.userEmail,
+    profile: user ? publicUser(user).profile : null,
+  });
+});
+
+app.get('/api/profile', authMiddleware, (req, res) => {
+  const users = readUsers();
+  const user = users.find((u) => u.id === req.userId);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  return res.status(200).json(publicUser(user));
+});
+
+app.put('/api/profile', authMiddleware, (req, res) => {
+  const users = readUsers();
+  const userIndex = users.findIndex((u) => u.id === req.userId);
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const profile = sanitizeProfile(req.body);
+  if (!profile.name) {
+    return res.status(400).json({ error: 'Name is required' });
+  }
+
+  users[userIndex].profile = profile;
+  users[userIndex].updatedAt = new Date().toISOString();
+  writeUsers(users);
+
+  return res.status(200).json(publicUser(users[userIndex]));
 });
 
 app.get('/api/reports', (req, res) => {
@@ -370,5 +429,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Currently Nameless server running on port ${PORT}`);
+  console.log(`Last Price server running on port ${PORT}`);
 });

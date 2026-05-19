@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Currently Nameless — Nigeria Price Tracker</title>
+  <title>Last Price — Nigeria Price Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
@@ -25,10 +25,10 @@
 <header>
   <div class="header-inner">
     <div class="header-logo">
-      <span class="logo-mark">CN</span>
+      <span class="logo-mark">LP</span>
       <div class="logo-copy">
-        <span class="logo-name">Currently</span>
-        <span class="logo-accent">Nameless</span>
+        <span class="logo-name">Last</span>
+        <span class="logo-accent">Price</span>
       </div>
     </div>
     <div class="header-spacer"></div>
@@ -226,6 +226,14 @@
       </div>
       <div class="auth-divider"><span>or create with email</span></div>
       <div class="form-group">
+        <label for="register-name">Full name</label>
+        <input type="text" id="register-name" placeholder="Your name" autocomplete="name" />
+      </div>
+      <div class="form-group">
+        <label for="register-location">Primary location</label>
+        <input type="text" id="register-location" placeholder="e.g. Ikeja, Lagos" autocomplete="address-level2" />
+      </div>
+      <div class="form-group">
         <label for="register-email">Email</label>
         <input type="email" id="register-email" placeholder="you@example.com" autocomplete="email" />
       </div>
@@ -239,6 +247,97 @@
       </div>
       <div class="form-link">
         Already have an account? <a id="switch-to-login">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: ACCOUNT ────────────────────────────── -->
+<div class="modal-backdrop" id="account-modal" style="display:none;">
+  <div class="modal account-modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
+    <div class="modal-header">
+      <div>
+        <p class="auth-kicker">Personal account</p>
+        <h2 id="account-modal-title">Your dashboard</h2>
+        <p class="auth-subtitle">Profile, listings, reputation, and contribution history.</p>
+      </div>
+      <button class="modal-close" data-close="account-modal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="account-profile-card">
+        <div class="account-avatar account-avatar-lg" id="account-modal-avatar">C</div>
+        <div>
+          <h3 id="account-modal-name">Your profile</h3>
+          <p id="account-modal-email">you@example.com</p>
+          <p id="account-modal-location">Location not set</p>
+        </div>
+      </div>
+      <div class="account-summary modal-account-summary">
+        <div class="account-stat">
+          <span>Trust score</span>
+          <strong id="account-modal-trust">0%</strong>
+        </div>
+        <div class="account-stat">
+          <span>Listings</span>
+          <strong id="account-modal-listings">0</strong>
+        </div>
+        <div class="account-stat">
+          <span>Verified</span>
+          <strong id="account-modal-verified">0</strong>
+        </div>
+        <div class="account-stat">
+          <span>Total votes</span>
+          <strong id="account-modal-votes">0</strong>
+        </div>
+      </div>
+      <div class="account-vote-row">
+        <span>Upvotes: <strong id="account-modal-upvotes">0</strong></span>
+        <span>Debunks: <strong id="account-modal-debunks">0</strong></span>
+      </div>
+      <div class="account-modal-actions">
+        <button class="btn btn-outline btn-sm" id="edit-profile-btn" type="button">Edit profile</button>
+        <button class="btn btn-primary btn-sm" id="account-report-btn" type="button">Report price</button>
+        <button class="btn btn-ghost btn-sm" id="account-signout-btn" type="button">Sign out</button>
+      </div>
+      <div class="account-listings account-modal-listings" id="account-modal-listing-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: EDIT PROFILE ───────────────────────── -->
+<div class="modal-backdrop" id="profile-modal" style="display:none;">
+  <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <div class="modal-header">
+      <div>
+        <p class="auth-kicker">Account details</p>
+        <h2 id="profile-modal-title">Edit profile</h2>
+        <p class="auth-subtitle">This information appears in your personal dashboard.</p>
+      </div>
+      <button class="modal-close" data-close="profile-modal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-error" id="profile-error"></div>
+      <div class="form-group">
+        <label for="profile-name">Full name</label>
+        <input type="text" id="profile-name" placeholder="Your name" autocomplete="name" />
+      </div>
+      <div class="form-group">
+        <label for="profile-location">Primary location</label>
+        <input type="text" id="profile-location" placeholder="Market, town, or neighborhood" autocomplete="address-level2" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="profile-state">State</label>
+          <input type="text" id="profile-state" placeholder="e.g. Lagos" />
+        </div>
+        <div class="form-group">
+          <label for="profile-lga">LGA</label>
+          <input type="text" id="profile-lga" placeholder="e.g. Ikeja" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" data-close="profile-modal">Cancel</button>
+        <button class="btn btn-primary" id="profile-save-btn" type="button">Save profile</button>
       </div>
     </div>
   </div>
