@@ -129,13 +129,16 @@ header {
 }
 
 .logo-name {
-  font-size: 1.2rem;
-  font-weight: 800;
+  font-size: 1.6rem;
+  font-weight: 1000;
+  color: #7c3aed;
+  font-family: 'Borsok', 'Montserrat', 'Inter', sans-serif;
 }
 
 .logo-accent {
-  font-size: 1rem;
-  color: var(--clay-muted);
+  font-size: 1.6rem;
+  color: #7ed957;
+  font-family: 'Borsok', 'Montserrat', 'Inter', sans-serif;
 }
 
 .header-spacer { flex: 1; }
