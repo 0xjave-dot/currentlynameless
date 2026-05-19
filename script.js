@@ -776,6 +776,8 @@ function reportCardHTML(r, isNearest = false) {
   const distanceLabel = r.distanceKm !== null
     ? `<span class="meta-dot">·</span><span class="meta-distance">📍 ${r.distanceKm.toFixed(1)} km away</span>`
     : '';
+  const hasLocationDetails = !!(r.locationName || r.lga || r.state || r.sellerPlace);
+  const locationLabel = hasLocationDetails ? reportLocationLabel(r) : 'Location details not provided';
 
   const confBar = r.confidence !== null
     ? `<div class="confidence-bar"><div class="confidence-fill" style="width:${r.confidence}%"></div></div>
@@ -796,10 +798,7 @@ function reportCardHTML(r, isNearest = false) {
       </div>
       <div class="report-meta">
         <span class="avail-badge avail-${r.availability}">${availLabel(r.availability)}</span>
-        ${r.locationName ? `<span class="meta-dot">·</span><span class="meta-location">📍 ${escHtml(r.locationName)}</span>` : ''}
-        ${r.lga ? `<span class="meta-dot">·</span><span class="meta-location">🏘 ${escHtml(r.lga)}</span>` : ''}
-        ${r.state ? `<span class="meta-dot">·</span><span class="meta-location">🗺 ${escHtml(r.state)}</span>` : ''}
-        ${r.sellerPlace ? `<span class="meta-dot">·</span><span class="meta-seller">🏬 ${escHtml(r.sellerPlace)}</span>` : ''}
+        ${locationLabel ? `<span class="meta-dot">·</span><span class="meta-location">📍 ${escHtml(locationLabel)}</span>` : ''}
         ${distanceLabel}
         <span class="meta-dot">·</span>
         <span class="meta-time">${timeAgo(r.timestamp)}</span>
@@ -808,8 +807,9 @@ function reportCardHTML(r, isNearest = false) {
         <summary>Expand listing details</summary>
         <div class="report-extra">
           <div class="report-location">
-            <strong>Exact listing coordinates</strong>
-            <p>Lat: ${r.lat.toFixed(5)}, Lng: ${r.lng.toFixed(5)}</p>
+            <strong>Listing location</strong>
+            <p>${escHtml(locationLabel)}</p>
+            ${hasLocationDetails ? '' : `<p>Coordinates are used only for mapping and verification.</p>`}
             <p><a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}" target="_blank" rel="noreferrer">Open in maps</a></p>
           </div>
           ${r.sellerContact ? `<div class="report-seller-contact"><strong>Seller contact</strong><p>${escHtml(r.sellerContact)}</p></div>` : ''}
