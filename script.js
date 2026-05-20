@@ -440,6 +440,10 @@ async function loadReports() {
   try {
     if (USE_FIREBASE && firebaseDb) {
       state.allReports = await firebaseLoadReports();
+      // prepend demo reports (avoid duplicates by id)
+      const demoEnriched = DEMO_REPORTS.map(enrichReport);
+      const serverIds = new Set(state.allReports.map(r => r.id));
+      state.allReports = demoEnriched.concat(state.allReports.filter(r => !demoEnriched.find(d => d.id === r.id)));
       state.reports = applyReportFilters(state.allReports);
       render();
       return;
@@ -447,6 +451,9 @@ async function loadReports() {
 
     const url = '/api/reports';
     state.allReports = await apiFetch(url, { method: 'GET', headers: {} });
+    // ensure demo reports are included for demonstration
+    const demoEnriched2 = DEMO_REPORTS.map(enrichReport);
+    state.allReports = demoEnriched2.concat(state.allReports.filter(r => !demoEnriched2.find(d => d.id === r.id)));
     state.reports = applyReportFilters(state.allReports);
     render();
   } catch (err) {
@@ -880,11 +887,18 @@ function reportCardHTML(r, isNearest = false) {
        </div>`
     : '<div class="report-media">No evidence uploaded yet.</div>';
 
+  const thumbMarkup = (r.media && r.media.length)
+    ? `<div class="report-thumb"><img class="report-thumb-img" src="${escHtml(r.media[0].url || r.media[0])}" alt="${escHtml(r.itemName)}"/></div>`
+    : '';
+
   return `
     <div class="report-card${extraClass}">
       <div class="report-card-header">
-        <div class="item-name">${escHtml(r.itemName)}</div>
-        <div class="price-badge">${formatPrice(r.price)}${r.measurement ? `/${escHtml(r.measurement)}` : ''}</div>
+        ${thumbMarkup}
+        <div style="flex:1;min-width:0;">
+          <div class="item-name">${escHtml(r.itemName)}</div>
+          <div class="price-badge">${formatPrice(r.price)}${r.measurement ? `/${escHtml(r.measurement)}` : ''}</div>
+        </div>
       </div>
       <div class="report-meta">
         <span class="avail-badge avail-${r.availability}">${availLabel(r.availability)}</span>
