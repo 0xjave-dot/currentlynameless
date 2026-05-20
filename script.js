@@ -31,6 +31,9 @@ let state = {
   userLat: null,
   userLng: null,
   searchQuery: '',
+  // UI preferences
+  showDemo: true,
+  layout: 'list', // 'list' or 'grid' for desktop/tablet
 };
 
 const pageType = document.body?.dataset?.page || 'home';
@@ -440,10 +443,11 @@ async function loadReports() {
   try {
     if (USE_FIREBASE && firebaseDb) {
       state.allReports = await firebaseLoadReports();
-      // prepend demo reports (avoid duplicates by id)
-      const demoEnriched = DEMO_REPORTS.map(enrichReport);
-      const serverIds = new Set(state.allReports.map(r => r.id));
-      state.allReports = demoEnriched.concat(state.allReports.filter(r => !demoEnriched.find(d => d.id === r.id)));
+      // prepend demo reports when enabled (avoid duplicates by id)
+      if (state.showDemo) {
+        const demoEnriched = DEMO_REPORTS.map(enrichReport);
+        state.allReports = demoEnriched.concat(state.allReports.filter(r => !demoEnriched.find(d => d.id === r.id)));
+      }
       state.reports = applyReportFilters(state.allReports);
       render();
       return;
@@ -451,9 +455,11 @@ async function loadReports() {
 
     const url = '/api/reports';
     state.allReports = await apiFetch(url, { method: 'GET', headers: {} });
-    // ensure demo reports are included for demonstration
-    const demoEnriched2 = DEMO_REPORTS.map(enrichReport);
-    state.allReports = demoEnriched2.concat(state.allReports.filter(r => !demoEnriched2.find(d => d.id === r.id)));
+    // include demo reports conditionally
+    if (state.showDemo) {
+      const demoEnriched2 = DEMO_REPORTS.map(enrichReport);
+      state.allReports = demoEnriched2.concat(state.allReports.filter(r => !demoEnriched2.find(d => d.id === r.id)));
+    }
     state.reports = applyReportFilters(state.allReports);
     render();
   } catch (err) {
@@ -580,6 +586,8 @@ function render() {
   updateLiveHighlights();
   renderReportAccess();
   renderComparisonPanel();
+  // ensure layout class is applied
+  setLayout(state.layout);
   if (state.view === 'list') renderList();
   else renderMap();
 }
@@ -1054,7 +1062,7 @@ function setView(v) {
   state.view = v;
   const listView = document.getElementById('list-view');
   const mapView = document.getElementById('map-view');
-  if (listView) listView.style.display = v === 'list' ? 'grid' : 'none';
+  if (listView) listView.style.display = v === 'list' ? '' : 'none';
   if (mapView) mapView.style.display = v === 'map' ? 'block' : 'none';
   document.getElementById('list-btn')?.classList.toggle('active', v === 'list');
   document.getElementById('map-btn')?.classList.toggle('active', v === 'map');
@@ -1069,6 +1077,15 @@ function setView(v) {
   } else {
     renderList();
   }
+}
+
+function setLayout(l) {
+  state.layout = l === 'grid' ? 'grid' : 'list';
+  const listView = document.getElementById('list-view');
+  if (listView) {
+    listView.classList.toggle('layout-grid', state.layout === 'grid');
+  }
+  document.getElementById('grid-layout-btn')?.classList.toggle('active', state.layout === 'grid');
 }
 
 // ── Near Me ───────────────────────────────────────────────────────
@@ -1722,6 +1739,12 @@ document.getElementById('list-btn')?.addEventListener('click', () => setView('li
 document.getElementById('map-btn')?.addEventListener('click', () => setView('map'));
 document.getElementById('nearme-btn')?.addEventListener('click', handleNearMe);
 document.getElementById('nationwide-btn')?.addEventListener('click', handleNationwide);
+document.getElementById('grid-layout-btn')?.addEventListener('click', () => setLayout(state.layout === 'grid' ? 'list' : 'grid'));
+document.getElementById('demo-toggle')?.addEventListener('change', e => {
+  state.showDemo = !!e.target.checked;
+  // reload reports to respect demo flag
+  loadReports();
+});
 document.getElementById('comparison-close')?.addEventListener('click', () => {
   state.comparisonOpen = false;
   render();

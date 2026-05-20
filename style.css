@@ -1167,6 +1167,16 @@ main {
 .confidence-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#34d399); }
 .confidence-label { margin-left:8px; color:var(--clay-muted); font-size:0.82rem; }
 
+/* Grid layout for desktop/tablet */
+#list-view.layout-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+#list-view.layout-grid .report-card { margin: 0; }
+
 .report-meta {
   display: flex;
   flex-wrap: wrap;
