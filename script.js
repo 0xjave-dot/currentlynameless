@@ -33,6 +33,11 @@ let state = {
   searchQuery: '',
 };
 
+const pageType = document.body?.dataset?.page || 'home';
+function isPage(page) {
+  return pageType === page;
+}
+
 // ── Map ───────────────────────────────────────────────────────────
 let map = null;
 let markers = [];
@@ -526,9 +531,23 @@ function render() {
   renderAuthArea();
   updateReportCount();
   updateLiveHighlights();
+  renderReportAccess();
   renderComparisonPanel();
   if (state.view === 'list') renderList();
   else renderMap();
+}
+
+function renderReportAccess() {
+  const reportCard = document.getElementById('report-page-card');
+  const guestCard = document.getElementById('report-guest');
+  if (!reportCard || !guestCard) return;
+  if (state.token) {
+    reportCard.style.display = '';
+    guestCard.style.display = 'none';
+  } else {
+    reportCard.style.display = 'none';
+    guestCard.style.display = 'block';
+  }
 }
 
 function updateLiveHighlights() {
@@ -536,7 +555,14 @@ function updateLiveHighlights() {
   if (!hero) return;
 
   if (!state.reports || state.reports.length === 0) {
-    hero.innerHTML = `<div class="hero-panel-item"><span>No live data yet</span><strong>—</strong></div>`;
+    hero.innerHTML = isPage('home')
+      ? `<div class="hero-panel-item"><span>We’re waiting for local reports near you.</span><strong>Enable location to see live local highlights.</strong></div>`
+      : `<div class="hero-panel-item"><span>No live data yet</span><strong>—</strong></div>`;
+    return;
+  }
+
+  if (isPage('home') && state.userLat === null) {
+    hero.innerHTML = `<div class="hero-panel-item"><span>Detecting your location…</span><strong>Allow location access to show local price highlights.</strong></div>`;
     return;
   }
 
@@ -972,13 +998,15 @@ window.handleVote = handleVote;
 // ── View toggle ───────────────────────────────────────────────────
 function setView(v) {
   state.view = v;
-  document.getElementById('list-view').style.display = v === 'list' ? 'grid' : 'none';
-  document.getElementById('map-view').style.display = v === 'map' ? 'block' : 'none';
-  document.getElementById('list-btn').classList.toggle('active', v === 'list');
-  document.getElementById('map-btn').classList.toggle('active', v === 'map');
-  // Update bottom nav buttons
-  const navHome = document.getElementById('nav-home');
-  if (navHome) navHome.classList.toggle('active', v === 'list');
+  const listView = document.getElementById('list-view');
+  const mapView = document.getElementById('map-view');
+  if (listView) listView.style.display = v === 'list' ? 'grid' : 'none';
+  if (mapView) mapView.style.display = v === 'map' ? 'block' : 'none';
+  document.getElementById('list-btn')?.classList.toggle('active', v === 'list');
+  document.getElementById('map-btn')?.classList.toggle('active', v === 'map');
+
+  if (!listView && !mapView) return;
+
   if (v === 'map') {
     if (!map) renderMap();
     else {
@@ -1164,10 +1192,24 @@ function renderCommentList(report) {
 
 function renderAccountSection() {
   const section = document.getElementById('account-section');
+  const emptyState = document.getElementById('account-empty');
   if (!state.token) {
-    section.style.display = 'none';
+    if (section) section.style.display = 'none';
+    if (emptyState) {
+      emptyState.style.display = 'block';
+      emptyState.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">👤</div>
+          <h3>Sign in to access your account</h3>
+          <p>Manage your uploads, view trust scores, and keep your local pricing data up to date.</p>
+          <button class="btn btn-primary" id="account-login-btn">Sign In</button>
+        </div>`;
+      document.getElementById('account-login-btn')?.addEventListener('click', () => openModal('login-modal'));
+    }
     return;
   }
+  if (emptyState) emptyState.style.display = 'none';
+
 
   const profile = state.accountProfile || loadAccountProfile();
   const { myReports, totalVotes, trustScore } = getAccountStats();
@@ -1318,11 +1360,19 @@ document.getElementById('switch-to-login').addEventListener('click', () => {
 });
 
 document.getElementById('hero-report-btn')?.addEventListener('click', () => {
-  document.getElementById('report-btn')?.click();
+  window.location.href = 'report.html';
 });
 
 document.getElementById('hero-login-btn')?.addEventListener('click', () => {
   openModal('login-modal');
+});
+
+document.getElementById('report-login-btn')?.addEventListener('click', () => {
+  openModal('login-modal');
+});
+
+document.getElementById('report-register-btn')?.addEventListener('click', () => {
+  openModal('register-modal');
 });
 
 // ── Login form ────────────────────────────────────────────────────
@@ -1333,7 +1383,7 @@ document.getElementById('edit-profile-btn')?.addEventListener('click', () => {
 
 document.getElementById('account-report-btn')?.addEventListener('click', () => {
   closeModal('account-modal');
-  document.getElementById('report-btn')?.click();
+  window.location.href = 'report.html';
 });
 
 document.getElementById('account-signout-btn')?.addEventListener('click', () => {
@@ -1482,22 +1532,8 @@ document.getElementById('register-password').addEventListener('keydown', e => {
 });
 
 // ── Report form ───────────────────────────────────────────────────
-document.getElementById('report-btn').addEventListener('click', () => {
-  if (!state.token) { openModal('login-modal'); return; }
-  pendingLat = null;
-  pendingLng = null;
-  document.getElementById('gps-status').textContent = state.userLat !== null ? '✅ Using your current location' : 'GPS not set';
-  document.getElementById('report-item').value = '';
-  document.getElementById('report-price').value = '';
-  document.getElementById('report-measurement').value = 'L';
-  document.getElementById('report-measurement-custom').value = '';
-  document.getElementById('report-avail').value = 'in_stock';
-  document.getElementById('report-location-name').value = '';
-  document.getElementById('report-state').value = '';
-  document.getElementById('report-lga').value = '';
-  document.getElementById('report-seller-place').value = '';
-  document.getElementById('report-seller-contact').value = '';
-  openModal('report-modal');
+document.getElementById('report-btn')?.addEventListener('click', () => {
+  window.location.href = 'report.html';
 });
 
 document.getElementById('report-submit').addEventListener('click', async () => {
@@ -1575,7 +1611,7 @@ document.getElementById('report-submit').addEventListener('click', async () => {
 
 // ── Search ────────────────────────────────────────────────────────
 let searchTimeout;
-document.getElementById('search-input').addEventListener('input', e => {
+document.getElementById('search-input')?.addEventListener('input', e => {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     state.searchQuery = e.target.value.trim();
@@ -1585,10 +1621,10 @@ document.getElementById('search-input').addEventListener('input', e => {
 });
 
 // ── View toggle buttons ────────────────────────────────────────────
-document.getElementById('list-btn').addEventListener('click', () => setView('list'));
-document.getElementById('map-btn').addEventListener('click', () => setView('map'));
-document.getElementById('nearme-btn').addEventListener('click', handleNearMe);
-document.getElementById('nationwide-btn').addEventListener('click', handleNationwide);
+document.getElementById('list-btn')?.addEventListener('click', () => setView('list'));
+document.getElementById('map-btn')?.addEventListener('click', () => setView('map'));
+document.getElementById('nearme-btn')?.addEventListener('click', handleNearMe);
+document.getElementById('nationwide-btn')?.addEventListener('click', handleNationwide);
 document.getElementById('comparison-close')?.addEventListener('click', () => {
   state.comparisonOpen = false;
   render();
@@ -1633,26 +1669,19 @@ document.getElementById('comparison-selected-modal')?.addEventListener('click', 
 });
 
 // ── Bottom Navigation (Mobile) ─────────────────────────────────────
-document.getElementById('nav-home')?.addEventListener('click', () => setView('list'));
-document.getElementById('nav-compare')?.addEventListener('click', () => {
-  state.comparisonItem = state.searchQuery;
-  state.comparisonLocations = [];
-  openModal('comparison-modal');
-  renderComparisonPanel();
-});
-document.getElementById('nav-account')?.addEventListener('click', () => {
-  if (state.token) {
-    openModal('account-modal');
-  } else {
-    openModal('login-modal');
-  }
-});
 document.getElementById('nav-report')?.addEventListener('click', () => {
   if (state.token) {
     openModal('report-modal');
   } else {
     openModal('login-modal');
   }
+});
+
+document.getElementById('comparison-open-btn')?.addEventListener('click', () => {
+  state.comparisonItem = state.searchQuery;
+  state.comparisonLocations = [];
+  openModal('comparison-modal');
+  renderComparisonPanel();
 });
 
 // ── Initial load ──────────────────────────────────────────────────
@@ -1663,8 +1692,13 @@ document.getElementById('nav-report')?.addEventListener('click', () => {
     if (!valid) toast('Session expired. Please sign in again.', 'info');
   }
   renderAuthArea();
-  await requestUserLocation();
+  if (isPage('home')) {
+    await requestUserLocation();
+  }
   await loadReports();
-  renderMap();
-  setView('list');
+  if (isPage('prices')) {
+    setView(state.view);
+  } else if (isPage('account')) {
+    renderAccountSection();
+  }
 })();
