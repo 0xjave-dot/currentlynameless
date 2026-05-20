@@ -190,9 +190,18 @@ header {
   height: 34px;
   border-radius: 14px;
   background: linear-gradient(135deg, var(--clay-primary-light), var(--clay-primary));
+  background-size: cover;
+  background-position: center;
   color: white;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.profile-avatar-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .account-menu-copy {

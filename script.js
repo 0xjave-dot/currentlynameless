@@ -147,7 +147,23 @@ function defaultAccountProfile(email = state.email) {
     location: '',
     state: '',
     lga: '',
+    avatarUrl: '',
   };
+}
+
+function renderAvatar(id, profile) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const avatarUrl = profile?.avatarUrl || '';
+  if (avatarUrl) {
+    el.style.backgroundImage = `url('${avatarUrl}')`;
+    el.textContent = '';
+    el.classList.add('account-avatar-image');
+  } else {
+    el.style.backgroundImage = '';
+    el.classList.remove('account-avatar-image');
+    el.textContent = (profile?.name || state.email || 'C').slice(0, 1).toUpperCase();
+  }
 }
 
 function loadAccountProfile(userId = state.userId, email = state.email) {
@@ -377,7 +393,16 @@ async function firebaseSignInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   const userCredential = await firebaseAuth.signInWithPopup(provider);
   const user = userCredential.user;
-  return { token: user.uid, email: user.email, userId: user.uid };
+  return {
+    token: user.uid,
+    email: user.email,
+    userId: user.uid,
+    profile: {
+      ...defaultAccountProfile(user.email),
+      name: user.displayName || deriveNameFromEmail(user.email),
+      avatarUrl: user.photoURL || '',
+    },
+  };
 }
 
 async function requestUserLocation() {
@@ -457,7 +482,11 @@ async function verifyToken() {
   if (USE_FIREBASE && firebaseAuth) {
     const user = firebaseAuth.currentUser;
     if (user) {
-      setSession(user.uid, user.email, user.uid);
+      setSession(user.uid, user.email, user.uid, {
+        ...defaultAccountProfile(user.email),
+        name: user.displayName || deriveNameFromEmail(user.email),
+        avatarUrl: user.photoURL || '',
+      });
       return true;
     }
     return false;
@@ -506,9 +535,19 @@ function renderAuthArea() {
   const heroLoginBtn = document.getElementById('hero-login-btn');
   if (state.token) {
     el.innerHTML = `
-      <button class="btn btn-ghost btn-sm" id="logout-btn">Sign Out</button>
+      <button class="account-menu-btn" id="open-account-btn" type="button">
+        <div class="account-avatar" id="header-avatar"></div>
+        <div class="account-menu-copy">
+          <strong>${escHtml(deriveNameFromEmail(state.email))}</strong>
+          <span>${escHtml(state.email)}</span>
+        </div>
+      </button>
     `;
-    document.getElementById('logout-btn').addEventListener('click', handleLogout);
+    renderAvatar('header-avatar', state.accountProfile || loadAccountProfile());
+    document.getElementById('open-account-btn').addEventListener('click', () => {
+      renderAccountModal();
+      openModal('account-modal');
+    });
     if (reportBtn) reportBtn.style.display = 'inline-flex';
     if (heroLoginBtn) heroLoginBtn.style.display = 'none';
   } else {
@@ -1217,7 +1256,7 @@ function renderAccountSection() {
   const locationText = accountLocationText(profile);
 
   document.getElementById('account-owner').textContent = profile?.name || deriveNameFromEmail(state.email);
-  document.getElementById('account-page-avatar').textContent = (profile?.name || state.email || 'C').slice(0, 1).toUpperCase();
+  renderAvatar('account-page-avatar', profile);
   document.getElementById('account-page-email').textContent = state.email || '';
   document.getElementById('account-page-location').textContent = locationText;
   document.getElementById('account-page-trust').textContent = `${trustScore}%`;
@@ -1268,7 +1307,7 @@ function renderAccountModal() {
   setText('account-modal-name', profile?.name || deriveNameFromEmail(state.email));
   setText('account-modal-email', state.email || '');
   setText('account-modal-location', locationText);
-  setText('account-modal-avatar', (profile?.name || state.email || 'C').slice(0, 1).toUpperCase());
+  renderAvatar('account-modal-avatar', profile);
   setText('account-modal-trust', `${trustScore}%`);
   setText('account-modal-listings', myReports.length);
   setText('account-modal-verified', verifiedListings);
@@ -1306,6 +1345,10 @@ function populateProfileForm() {
   document.getElementById('profile-location').value = profile?.location || '';
   document.getElementById('profile-state').value = profile?.state || '';
   document.getElementById('profile-lga').value = profile?.lga || '';
+  const avatarLabel = document.getElementById('profile-avatar-filename');
+  if (avatarLabel) {
+    avatarLabel.textContent = profile?.avatarUrl ? 'Using selected avatar' : 'Use your device gallery';
+  }
 }
 
 async function saveReportComment(reportId, text, parentId = null) {
@@ -1424,6 +1467,7 @@ document.getElementById('profile-save-btn')?.addEventListener('click', async () 
       location: document.getElementById('profile-location').value.trim(),
       state: document.getElementById('profile-state').value.trim(),
       lga: document.getElementById('profile-lga').value.trim(),
+      avatarUrl: state.accountProfile?.avatarUrl || '',
     });
     closeModal('profile-modal');
     renderAuthArea();
@@ -1436,6 +1480,28 @@ document.getElementById('profile-save-btn')?.addEventListener('click', async () 
     btn.disabled = false;
     btn.textContent = 'Save profile';
   }
+});
+
+document.getElementById('profile-avatar-btn')?.addEventListener('click', () => {
+  document.getElementById('profile-avatar-input')?.click();
+});
+
+document.getElementById('profile-avatar-input')?.addEventListener('change', event => {
+  const input = event.target;
+  if (!input.files || !input.files.length) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = () => {
+    const url = reader.result;
+    if (!url) return;
+    state.accountProfile = {
+      ...state.accountProfile,
+      avatarUrl: url,
+    };
+    const avatarLabel = document.getElementById('profile-avatar-filename');
+    if (avatarLabel) avatarLabel.textContent = file.name;
+  };
+  reader.readAsDataURL(file);
 });
 
 document.getElementById('login-submit').addEventListener('click', async () => {
