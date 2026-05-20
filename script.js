@@ -570,9 +570,9 @@ async function loadReports() {
   try {
     if (USE_FIREBASE && firebaseDb) {
       state.allReports = await firebaseLoadReports();
-      // prepend demo reports (avoid duplicates by id)
-      const demoEnriched = DEMO_REPORTS.map(enrichReport);
-      state.allReports = demoEnriched.concat(state.allReports.filter(r => !demoEnriched.find(d => d.id === r.id)));
+        // prepend demo reports (avoid duplicates by id) — ensure demo images are available in `media`
+        const demoEnriched = DEMO_REPORTS.map(d => enrichReport({ ...d, media: d.media || (d.imageUrl ? [d.imageUrl] : []) }));
+        state.allReports = demoEnriched.concat(state.allReports.filter(r => !demoEnriched.find(d => d.id === r.id)));
       state.reports = applyReportFilters(state.allReports);
       render();
       return;
@@ -580,8 +580,8 @@ async function loadReports() {
 
     const url = '/api/reports';
     state.allReports = await apiFetch(url, { method: 'GET', headers: {} });
-    // include demo reports
-    const demoEnriched = DEMO_REPORTS.map(enrichReport);
+    // include demo reports — ensure demo images are available in `media`
+    const demoEnriched = DEMO_REPORTS.map(d => enrichReport({ ...d, media: d.media || (d.imageUrl ? [d.imageUrl] : []) }));
     state.allReports = demoEnriched.concat(state.allReports.filter(r => !demoEnriched.find(d => d.id === r.id)));
     state.reports = applyReportFilters(state.allReports);
     render();
@@ -748,13 +748,22 @@ function updateLiveHighlights() {
   let localReports = state.reports;
   let sourceLabel = 'Nigeria';
   if (state.userLat !== null && state.userLng !== null) {
-    const nearby = state.reports.filter(r => haversine(state.userLat, state.userLng, r.lat, r.lng) <= radiusKm);
-    if (nearby.length > 0) {
-      localReports = nearby;
-      const nearest = nearby.slice().sort((a, b) => haversine(state.userLat, state.userLng, a.lat, a.lng) - haversine(state.userLat, state.userLng, b.lat, b.lng))[0];
-      sourceLabel = nearest.locationName || nearest.lga || nearest.state || 'Nearby area';
+    // Prefer showing everything in the same state as the nearest report so demos can surface.
+    const sorted = state.reports.slice().sort((a, b) => haversine(state.userLat, state.userLng, a.lat, a.lng) - haversine(state.userLat, state.userLng, b.lat, b.lng));
+    const nearest = sorted[0];
+    if (nearest && nearest.state) {
+      localReports = state.reports.filter(r => r.state === nearest.state);
+      sourceLabel = nearest.state || (nearest.locationName || nearest.lga || 'Nearby area');
     } else {
-      sourceLabel = 'Nearby radius';
+      // Fallback to nearby radius if no state info is available
+      const nearby = state.reports.filter(r => haversine(state.userLat, state.userLng, r.lat, r.lng) <= radiusKm);
+      if (nearby.length > 0) {
+        localReports = nearby;
+        const nearest2 = nearby.slice().sort((a, b) => haversine(state.userLat, state.userLng, a.lat, a.lng) - haversine(state.userLat, state.userLng, b.lat, b.lng))[0];
+        sourceLabel = nearest2.locationName || nearest2.lga || nearest2.state || 'Nearby area';
+      } else {
+        sourceLabel = 'Nearby radius';
+      }
     }
   }
 
@@ -1014,12 +1023,12 @@ function reportCardHTML(r, isNearest = false) {
 
   const mediaMarkup = (r.media && r.media.length)
     ? `<div class="report-media">
-         ${r.media.map(media => `<img class="media-thumb" src="${escHtml(media.url || media)}" alt="Evidence preview" />`).join('')}
+         ${r.media.map(media => `<a href="${escHtml(media.url || media)}" target="_blank" rel="noreferrer"><img class="media-thumb" src="${escHtml(media.url || media)}" alt="Evidence preview" /></a>`).join('')}
        </div>`
     : '<div class="report-media">No evidence uploaded yet.</div>';
 
   const thumbMarkup = (r.media && r.media.length)
-    ? `<div class="report-thumb"><img class="report-thumb-img" src="${escHtml(r.media[0].url || r.media[0])}" alt="${escHtml(r.itemName)}"/></div>`
+    ? `<div class="report-thumb"><a href="${escHtml(r.media[0].url || r.media[0])}" target="_blank" rel="noreferrer"><img class="report-thumb-img" src="${escHtml(r.media[0].url || r.media[0])}" alt="${escHtml(r.itemName)}"/></a></div>`
     : '';
 
   return `
