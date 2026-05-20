@@ -1707,6 +1707,14 @@ main {
     position: relative;
   }
 
+  .bottom-nav-item span {
+    display: none;
+  }
+
+  .bottom-nav-item.active span {
+    display: block;
+  }
+
   .bottom-nav-item:active {
     transform: scale(0.95);
   }
