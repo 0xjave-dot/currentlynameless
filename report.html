@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Last Price — Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800;900&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="design-tokens.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+</head>
+<body data-page="report">
+  <div class="background-blobs" aria-hidden="true">
+    <div class="blob blob-purple"></div>
+    <div class="blob blob-pink"></div>
+    <div class="blob blob-blue"></div>
+    <div class="blob blob-amber"></div>
+  </div>
+
+  <header>
+    <div class="header-inner">
+      <div class="header-logo">
+        <img class="logo-mark" src="https://i.ibb.co/zVwd5CVS/1-2.png" alt="Last Price logo" />
+        <div class="logo-copy">
+          <span class="logo-name">LAST</span>
+          <span class="logo-accent">PRICE</span>
+        </div>
+      </div>
+      <div class="header-spacer"></div>
+      <div class="header-user" id="auth-area"></div>
+    </div>
+  </header>
+
+  <section class="hero-section">
+    <div class="hero-copy">
+      <div class="hero-eyebrow">Report a price</div>
+      <h1>Share trusted local prices from your area.</h1>
+      <p>Submit item, price, and location details so your community can see the latest verified reports.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="hero-report-btn">Report now</button>
+        <button class="btn btn-outline" id="hero-login-btn">Sign in</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="clay-card-soft report-guest-card" id="report-guest" style="display:none; margin: 24px 16px;">
+    <div>
+      <div class="hero-eyebrow">Please sign in</div>
+      <h2>Sign in to submit a price report</h2>
+      <p>Reporting prices helps your community stay informed. Sign in or create an account to continue.</p>
+      <div class="hero-actions" style="justify-content:flex-start; gap:12px; margin-top:18px;">
+        <button class="btn btn-primary" id="report-login-btn">Sign in</button>
+        <button class="btn btn-outline" id="report-register-btn">Register</button>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <div class="clay-card-soft report-page-card">
+      <div class="report-panel-inner">
+        <div class="report-header">
+          <h2>Price report details</h2>
+          <p>Fill out as much information as you can to make the report useful to others.</p>
+        </div>
+        <div class="form-error" id="report-error"></div>
+        <div class="form-group">
+          <label for="report-item">Item Name</label>
+          <input type="text" id="report-item" placeholder="e.g. Bag of Rice (50kg)" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="report-price">Price (₦)</label>
+            <input type="number" id="report-price" placeholder="e.g. 85000" min="0" step="1" />
+          </div>
+          <div class="form-group measurement-group">
+            <label for="report-measurement">Measurement</label>
+            <div class="measurement-inputs">
+              <select id="report-measurement" class="measurement-select">
+                <option value="L">Litre</option>
+                <option value="kg">kg</option>
+                <option value="basket">Basket</option>
+                <option value="bucket">Bucket</option>
+                <option value="custom">Custom</option>
+              </select>
+              <input type="text" id="report-measurement-custom" placeholder="Custom unit" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="report-avail">Availability</label>
+            <select id="report-avail">
+              <option value="in_stock">✅ In Stock</option>
+              <option value="limited">⚠️ Limited</option>
+              <option value="out_of_stock">❌ Out of Stock</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <div class="loc-row">
+            <input type="text" id="report-location-name" placeholder="e.g. Mile 12 Market, Lagos" />
+            <button class="btn btn-outline btn-sm" id="get-location-btn" title="Use my GPS location">📍 GPS</button>
+          </div>
+          <div style="font-size:0.78rem; color:var(--gray-400); margin-top:4px;" id="gps-status">GPS not set</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="report-state">State</label>
+            <select id="report-state">
+              <option value="">Select State</option>
+              <option value="Lagos">Lagos</option>
+              <option value="Abuja">Abuja FCT</option>
+              <option value="Kano">Kano</option>
+              <option value="Rivers">Rivers</option>
+              <option value="Kaduna">Kaduna</option>
+              <option value="Oyo">Oyo</option>
+              <option value="Anambra">Anambra</option>
+              <option value="Edo">Edo</option>
+              <option value="Enugu">Enugu</option>
+              <option value="Delta">Delta</option>
+              <option value="Ogun">Ogun</option>
+              <option value="Niger">Niger</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="report-lga">LGA</label>
+            <input type="text" id="report-lga" placeholder="e.g. Surulere, Onitsha North" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="report-media">Evidence media</label>
+          <input type="file" id="report-media" accept="image/*" multiple capture="environment" />
+          <div class="media-previews" id="report-media-preview"></div>
+        </div>
+        <div class="form-group">
+          <label for="report-seller-place">Where is this item sold?</label>
+          <input type="text" id="report-seller-place" placeholder="Supermart, petrol station, market, shop name..." />
+        </div>
+        <div class="form-group">
+          <label for="report-seller-contact">Seller contact (optional)</label>
+          <input type="text" id="report-seller-contact" placeholder="Phone, WhatsApp, etc. if available" />
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" onclick="window.location.href='index.html'">Cancel</button>
+          <button class="btn btn-primary" id="report-submit">Submit Report</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav" id="bottom-nav">
+    <a class="bottom-nav-item" id="nav-home" href="index.html" aria-label="Home">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M3 11.5L12 3l9 8.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"></path>
+      </svg>
+      <span class="nav-label">Home</span>
+    </a>
+    <a class="bottom-nav-item" id="nav-prices" href="prices.html" aria-label="Prices">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M6 4h11a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-4l-4 4H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path>
+        <path d="M16 16h2a1 1 0 0 1 1 1v2"></path>
+      </svg>
+      <span class="nav-label">Prices</span>
+    </a>
+    <a class="bottom-nav-item active" id="nav-report" href="report.html" aria-label="Report">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 8v8M8 12h8"></path>
+      </svg>
+      <span class="nav-label">Report</span>
+    </a>
+    <a class="bottom-nav-item" id="nav-account" href="account.html" aria-label="Account">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="8" r="3.5"></circle>
+        <path d="M5 21c1.5-4 5-6 7-6s5.5 2 7 6"></path>
+      </svg>
+      <span class="nav-label">Account</span>
+    </a>
+  </nav>
+
+  <div id="toast-container"></div>
+
+  <div class="modal-backdrop" id="login-modal" style="display:none;">
+    <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <div class="modal-header">
+        <div>
+          <p class="auth-kicker">Welcome back</p>
+          <h2 id="login-title">Sign in</h2>
+          <p class="auth-subtitle">Track trusted prices, vote on reports, and manage your listings.</p>
+        </div>
+        <button class="modal-close" data-close="login-modal" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-error" id="login-error"></div>
+        <div class="form-actions google-action auth-google-first">
+          <button class="btn btn-outline btn-sm btn-google google-auth-btn" id="google-signin-btn" type="button">
+            <span class="google-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                <path fill="#4285F4" d="M23.954 12.276c0-.804-.073-1.576-.21-2.322H12v4.401h6.538c-.282 1.518-1.104 2.803-2.348 3.664v3.041h3.797c2.223-2.051 3.5-5.067 3.5-8.784z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.957-1.072 7.943-2.907l-3.797-3.041c-1.056.708-2.411 1.13-4.146 1.13-3.187 0-5.888-2.15-6.858-5.04H1.206v3.17C3.173 21.665 7.333 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.142 14.142A7.299 7.299 0 0 1 4.5 12c0-.859.154-1.685.442-2.444V6.386H1.206A11.996 11.996 0 0 0 0 12c0 1.93.463 3.754 1.206 5.442l3.936-3.3z"/>
+                <path fill="#EA4335" d="M12 4.8c1.758 0 3.336.605 4.576 1.792l3.432-3.432C17.956 1.286 15.237 0 12 0 7.333 0 3.173 2.335 1.206 5.994l3.936 3.17C6.112 6.95 8.813 4.8 12 4.8z"/>
+              </svg>
+            </span>
+            <span class="btn-text">Continue with Google</span>
+          </button>
+        </div>
+        <div class="auth-divider"><span>or use email</span></div>
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Your password" autocomplete="current-password" />
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" data-close="login-modal">Cancel</button>
+          <button class="btn btn-primary" id="login-submit">Sign In</button>
+        </div>
+        <div class="form-link">
+          Don't have an account? <a id="switch-to-register">Create one</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="register-modal" style="display:none;">
+    <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="register-title">
+      <div class="modal-header">
+        <div>
+          <p class="auth-kicker">Join the community</p>
+          <h2 id="register-title">Create account</h2>
+          <p class="auth-subtitle">Start reporting prices and building trust for your area.</p>
+        </div>
+        <button class="modal-close" data-close="register-modal" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-error" id="register-error"></div>
+        <div class="form-actions google-action auth-google-first">
+          <button class="btn btn-outline btn-sm btn-google google-auth-btn" id="google-register-btn" type="button">
+            <span class="google-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+                <path fill="#4285F4" d="M23.954 12.276c0-.804-.073-1.576-.21-2.322H12v4.401h6.538c-.282 1.518-1.104 2.803-2.348 3.664v3.041h3.797c2.223-2.051 3.5-5.067 3.5-8.784z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.957-1.072 7.943-2.907l-3.797-3.041c-1.056.708-2.411 1.13-4.146 1.13-3.187 0-5.888-2.15-6.858-5.04H1.206v3.17C3.173 21.665 7.333 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.142 14.142A7.299 7.299 0 0 1 4.5 12c0-.859.154-1.685.442-2.444V6.386H1.206A11.996 11.996 0 0 0 0 12c0 1.93.463 3.754 1.206 5.442l3.936-3.3z"/>
+                <path fill="#EA4335" d="M12 4.8c1.758 0 3.336.605 4.576 1.792l3.432-3.432C17.956 1.286 15.237 0 12 0 7.333 0 3.173 2.335 1.206 5.994l3.936 3.17C6.112 6.95 8.813 4.8 12 4.8z"/>
+              </svg>
+            </span>
+            <span class="btn-text">Continue with Google</span>
+          </button>
+        </div>
+        <div class="auth-divider"><span>or create with email</span></div>
+        <div class="form-group">
+          <label for="register-name">Full name</label>
+          <input type="text" id="register-name" placeholder="Your name" autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label for="register-location">Primary location</label>
+          <input type="text" id="register-location" placeholder="e.g. Ikeja, Lagos" autocomplete="address-level2" />
+        </div>
+        <div class="form-group">
+          <label for="register-email">Email</label>
+          <input type="email" id="register-email" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="register-password">Password <span class="field-hint">(min 6 chars)</span></label>
+          <input type="password" id="register-password" placeholder="Choose a password" autocomplete="new-password" />
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" data-close="register-modal">Cancel</button>
+          <button class="btn btn-primary" id="register-submit">Create Account</button>
+        </div>
+        <div class="form-link">
+          Already have an account? <a id="switch-to-login">Sign in</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script><script src="script.js"></script>
+</body>
+</html>

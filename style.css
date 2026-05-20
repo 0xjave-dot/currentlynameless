@@ -1597,6 +1597,10 @@ main {
   font-weight: 600;
 }
 
+.bottom-nav {
+  display: none;
+}
+
 /* ── Responsive ──────────────────────────────────── */
 @media (max-width: 640px) {
   .header-logo { font-size: 1rem; }
@@ -1695,6 +1699,7 @@ main {
     justify-content: center;
     gap: 4px;
     flex: 1;
+    min-width: 0;
     height: 100%;
     border: none;
     background: transparent;
@@ -1711,58 +1716,65 @@ main {
     display: none;
   }
 
+  .bottom-nav-item.active {
+    color: var(--clay-primary);
+    flex-direction: row;
+    gap: 8px;
+    justify-content: center;
+  }
+
   .bottom-nav-item.active span {
-    display: block;
+    display: inline-block;
+  }
+
+  .bottom-nav-item.active::before,
+  .bottom-nav-item.active::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 18px;
+    height: 2px;
+    background: currentColor;
+    transform: translateX(-50%);
+  }
+
+  .bottom-nav-item.active::before {
+    top: 12px;
+  }
+
+  .bottom-nav-item.active::after {
+    bottom: 12px;
   }
 
   .bottom-nav-item:active {
     transform: scale(0.95);
   }
 
-  .bottom-nav-item.active {
-    color: var(--clay-primary);
-  }
-
-  .bottom-nav-item.active::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--clay-primary);
-    border-radius: 0 0 3px 3px;
-  }
-
-  .bottom-nav-primary {
-    background: linear-gradient(135deg, var(--clay-primary-light), var(--clay-primary));
-    color: white;
-    border-radius: 50%;
-    width: 56px;
-    height: 56px;
-    position: absolute;
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-  }
-
-  .bottom-nav-primary:hover {
-    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.4);
-  }
-
-  .bottom-nav-primary:active {
-    transform: translateX(-50%) scale(0.95);
-  }
-
   .nav-icon {
     width: 24px;
     height: 24px;
     display: inline-block;
+    flex-shrink: 0;
   }
 
-  .bottom-nav-primary .nav-icon {
-    width: 28px;
-    height: 28px;
+  .bottom-nav-item.active .nav-icon {
+    margin-right: 6px;
+  }
+
+  .bottom-nav-primary {
+    background: transparent;
+    color: inherit;
+    border-radius: 0;
+    width: auto;
+    height: auto;
+    position: static;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .bottom-nav-primary:hover,
+  .bottom-nav-primary:active {
+    box-shadow: none;
   }
 }
+
