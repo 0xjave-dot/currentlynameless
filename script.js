@@ -492,6 +492,14 @@ async function handleLogout() {
 }
 
 // ── Render auth area ──────────────────────────────────────────────
+function updatePageAuthButtons() {
+  ['hero-login-btn', 'report-login-btn', 'report-register-btn', 'account-login-btn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.style.display = state.token ? 'none' : '';
+  });
+}
+
 function renderAuthArea() {
   const el = document.getElementById('auth-area');
   const reportBtn = document.getElementById('report-btn');
@@ -512,7 +520,7 @@ function renderAuthArea() {
     `;
     document.getElementById('account-menu-btn').addEventListener('click', () => openModal('account-modal'));
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
-    reportBtn.style.display = 'inline-flex';
+    if (reportBtn) reportBtn.style.display = 'inline-flex';
     if (heroLoginBtn) heroLoginBtn.style.display = 'none';
   } else {
     el.innerHTML = `
@@ -521,9 +529,13 @@ function renderAuthArea() {
     `;
     document.getElementById('header-login-btn').addEventListener('click', () => openModal('login-modal'));
     document.getElementById('header-register-btn').addEventListener('click', () => openModal('register-modal'));
-    reportBtn.style.display = 'none';
+    if (reportBtn) reportBtn.style.display = 'none';
     if (heroLoginBtn) heroLoginBtn.style.display = 'inline-flex';
   }
+
+  updatePageAuthButtons();
+  if (isPage('account')) renderAccountSection();
+  if (isPage('report')) renderReportAccess();
 }
 
 // ── Render reports ────────────────────────────────────────────────
@@ -1670,11 +1682,7 @@ document.getElementById('comparison-selected-modal')?.addEventListener('click', 
 
 // ── Bottom Navigation (Mobile) ─────────────────────────────────────
 document.getElementById('nav-report')?.addEventListener('click', () => {
-  if (state.token) {
-    openModal('report-modal');
-  } else {
-    openModal('login-modal');
-  }
+  window.location.href = 'report.html';
 });
 
 document.getElementById('comparison-open-btn')?.addEventListener('click', () => {
