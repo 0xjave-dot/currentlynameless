@@ -57,21 +57,49 @@
           <strong id="account-trust">0</strong>
         </div>
       </div>
-      <div class="account-summary">
+      <div class="account-page-grid">
+        <div class="account-page-card">
+          <div class="account-avatar account-avatar-lg" id="account-page-avatar">C</div>
+          <div class="account-page-info">
+            <p class="account-label">Profile details</p>
+            <h3>Your profile</h3>
+            <p class="account-subtitle" id="account-page-email">you@example.com</p>
+            <p class="account-subtitle" id="account-page-location">Not set</p>
+          </div>
+        </div>
+        <div class="account-action-card">
+          <button class="btn btn-outline btn-sm" id="account-page-edit-btn" type="button">Edit profile</button>
+          <button class="btn btn-primary btn-sm" id="account-page-report-btn" type="button">Report price</button>
+        </div>
+      </div>
+      <div class="account-summary modal-account-summary">
+        <div class="account-stat">
+          <span>Trust score</span>
+          <strong id="account-page-trust">0%</strong>
+        </div>
         <div class="account-stat">
           <span>Listings</span>
           <strong id="account-listings-count">0</strong>
         </div>
         <div class="account-stat">
-          <span>Location</span>
-          <strong id="account-location">Not set</strong>
+          <span>Verified</span>
+          <strong id="account-page-verified">0</strong>
         </div>
         <div class="account-stat">
-          <span>Verified votes</span>
-          <strong id="account-votes-count">0</strong>
+          <span>Total votes</span>
+          <strong id="account-page-total-votes">0</strong>
         </div>
       </div>
-      <div class="account-listings" id="account-listings"></div>
+      <div class="account-vote-row">
+        <span>Upvotes: <strong id="account-page-upvotes">0</strong></span>
+        <span>Debunks: <strong id="account-page-debunks">0</strong></span>
+      </div>
+      <div class="account-modal-actions" style="margin-top: 18px;">
+        <button class="btn btn-outline btn-sm" id="account-page-edit-btn" type="button">Edit profile</button>
+        <button class="btn btn-primary btn-sm" id="account-page-report-btn" type="button">Report price</button>
+        <button class="btn btn-ghost btn-sm" id="account-page-logout-btn" type="button">Sign out</button>
+      </div>
+      <div class="account-listings account-modal-listings" id="account-listings"></div>
     </section>
 
     <div id="account-empty"></div>

@@ -505,20 +505,9 @@ function renderAuthArea() {
   const reportBtn = document.getElementById('report-btn');
   const heroLoginBtn = document.getElementById('hero-login-btn');
   if (state.token) {
-    const profile = state.accountProfile || loadAccountProfile();
-    state.accountProfile = profile;
-    const displayName = profile?.name || deriveNameFromEmail(state.email);
     el.innerHTML = `
-      <button class="account-menu-btn" id="account-menu-btn" type="button">
-        <span class="account-avatar">${escHtml(displayName).slice(0, 1).toUpperCase()}</span>
-        <span class="account-menu-copy">
-          <strong>${escHtml(displayName)}</strong>
-          <span>${escHtml(state.email || '')}</span>
-        </span>
-      </button>
       <button class="btn btn-ghost btn-sm" id="logout-btn">Sign Out</button>
     `;
-    document.getElementById('account-menu-btn').addEventListener('click', () => openModal('account-modal'));
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
     if (reportBtn) reportBtn.style.display = 'inline-flex';
     if (heroLoginBtn) heroLoginBtn.style.display = 'none';
@@ -1222,26 +1211,42 @@ function renderAccountSection() {
   }
   if (emptyState) emptyState.style.display = 'none';
 
-
   const profile = state.accountProfile || loadAccountProfile();
-  const { myReports, totalVotes, trustScore } = getAccountStats();
+  state.accountProfile = profile;
+  const { myReports, totalVotes, upvotes, debunks, trustScore, verifiedListings } = getAccountStats();
   const locationText = accountLocationText(profile);
 
-  document.getElementById('account-owner').textContent = profile?.name || state.email || 'Your profile';
-  document.getElementById('account-trust').textContent = `${trustScore}%`;
+  document.getElementById('account-owner').textContent = profile?.name || deriveNameFromEmail(state.email);
+  document.getElementById('account-page-avatar').textContent = (profile?.name || state.email || 'C').slice(0, 1).toUpperCase();
+  document.getElementById('account-page-email').textContent = state.email || '';
+  document.getElementById('account-page-location').textContent = locationText;
+  document.getElementById('account-page-trust').textContent = `${trustScore}%`;
   document.getElementById('account-listings-count').textContent = myReports.length;
-  document.getElementById('account-location').textContent = locationText;
-  document.getElementById('account-votes-count').textContent = totalVotes;
+  document.getElementById('account-page-verified').textContent = verifiedListings;
+  document.getElementById('account-page-total-votes').textContent = totalVotes;
+  document.getElementById('account-page-upvotes').textContent = upvotes;
+  document.getElementById('account-page-debunks').textContent = debunks;
 
-  const listingsContainer = document.getElementById('account-listings');
-  if (myReports.length === 0) {
-    listingsContainer.innerHTML = '<div class="account-listing-item">No listings yet. Share a price report to start building trust.</div>';
+  const editBtn = document.getElementById('account-page-edit-btn');
+  if (editBtn) editBtn.onclick = () => openModal('profile-modal');
+  const reportBtn = document.getElementById('account-page-report-btn');
+  if (reportBtn) reportBtn.onclick = () => window.location.href = 'report.html';
+  const logoutBtn = document.getElementById('account-page-logout-btn');
+  if (logoutBtn) logoutBtn.onclick = handleLogout;
+
+  const listings = document.getElementById('account-listings');
+  if (!myReports.length) {
+    listings.innerHTML = `
+      <div class="account-empty">
+        <strong>No listings yet</strong>
+        <p>Report a price to start building your account history and trust score.</p>
+      </div>`;
   } else {
-    listingsContainer.innerHTML = myReports.slice(0, 3).map(report => `
+    listings.innerHTML = myReports.slice(0, 5).map(report => `
       <div class="account-listing-item">
-        <strong>${escHtml(report.itemName)} — ${formatPrice(report.price)}</strong>
-        <p>${report.locationName ? escHtml(report.locationName) : 'Location details available when expanded.'}</p>
-        <p>${availLabel(report.availability)} · ${timeAgo(report.timestamp)}</p>
+        <strong>${escHtml(report.itemName)} - ${formatPrice(report.price)}${report.measurement ? `/${escHtml(report.measurement)}` : ''}</strong>
+        <p>${escHtml(report.locationName || report.lga || report.state || 'Location details available')}</p>
+        <p>${availLabel(report.availability)} · ${timeAgo(report.timestamp)} · ${report.confidence !== null ? `${report.confidence}% trust` : 'No votes yet'}</p>
       </div>
     `).join('');
   }
