@@ -600,22 +600,35 @@ function updateReportCount() {
 
 function renderComparisonPanel() {
   const section = document.getElementById('comparison-section');
-  if (!section) return;
-
-  section.style.display = state.comparisonOpen ? 'block' : 'none';
-  document.getElementById('compare-btn')?.classList.toggle('active-nearme', state.comparisonOpen);
-  if (!state.comparisonOpen) return;
+  const isModalOpen = document.getElementById('comparison-modal')?.style.display !== 'none';
+  
+  // Update section display if it exists
+  if (section) {
+    section.style.display = state.comparisonOpen ? 'block' : 'none';
+    document.getElementById('compare-btn')?.classList.toggle('active-nearme', state.comparisonOpen);
+  }
+  
+  // Only render if modal is open or section should be displayed
+  if (!isModalOpen && !state.comparisonOpen && section) return;
 
   const input = document.getElementById('compare-item-input');
+  const inputModal = document.getElementById('compare-item-input-modal');
   if (input && document.activeElement !== input) {
     input.value = state.comparisonItem || state.searchQuery || '';
+  }
+  if (inputModal && document.activeElement !== inputModal) {
+    inputModal.value = state.comparisonItem || state.searchQuery || '';
   }
 
   const reports = getComparableReports();
   const groups = getLocationGroups(reports);
+  
   const select = document.getElementById('compare-location-select');
+  const selectModal = document.getElementById('compare-location-select-modal');
   const grid = document.getElementById('comparison-grid');
+  const gridModal = document.getElementById('comparison-grid-modal');
   const selected = document.getElementById('comparison-selected');
+  const selectedModal = document.getElementById('comparison-selected-modal');
   const title = document.getElementById('comparison-title');
 
   const nearestGroup = hasUserLocation()
@@ -637,14 +650,17 @@ function renderComparisonPanel() {
   const selectedKeys = new Set(state.comparisonLocations);
   const visibleGroups = groups.filter(group => selectedKeys.has(group.key));
   const itemLabel = (state.comparisonItem || state.searchQuery || 'all items').trim();
-  title.textContent = `Compare ${itemLabel || 'all items'} by location`;
+  if (title) title.textContent = `Compare ${itemLabel || 'all items'} by location`;
 
-  select.innerHTML = '<option value="">Select from available locations</option>' + groups
+  const selectHTML = '<option value="">Select from available locations</option>' + groups
     .filter(group => !selectedKeys.has(group.key))
     .map(group => `<option value="${escHtml(group.key)}">${escHtml(group.label)} (${group.reports.length})</option>`)
     .join('');
+  
+  if (select) select.innerHTML = selectHTML;
+  if (selectModal) selectModal.innerHTML = selectHTML;
 
-  selected.innerHTML = visibleGroups.length
+  const selectedHTML = visibleGroups.length
     ? visibleGroups.map(group => `
         <button class="comparison-chip" type="button" data-location-key="${escHtml(group.key)}">
           ${escHtml(group.label)}
@@ -652,18 +668,23 @@ function renderComparisonPanel() {
         </button>
       `).join('')
     : '<span class="comparison-empty-text">Choose locations to compare.</span>';
+  
+  if (selected) selected.innerHTML = selectedHTML;
+  if (selectedModal) selectedModal.innerHTML = selectedHTML;
 
   if (!reports.length) {
-    grid.innerHTML = `
+    const emptyHTML = `
       <div class="empty-state">
         <div class="empty-icon">No data</div>
         <h3>No matching prices</h3>
         <p>Try another item or clear the search to compare available locations.</p>
       </div>`;
+    if (grid) grid.innerHTML = emptyHTML;
+    if (gridModal) gridModal.innerHTML = emptyHTML;
     return;
   }
 
-  grid.innerHTML = visibleGroups.map(group => {
+  const gridHTML = visibleGroups.map(group => {
     const prices = group.reports.map(report => Number(report.price)).filter(price => !Number.isNaN(price));
     const average = prices.reduce((sum, price) => sum + price, 0) / prices.length;
     const lowest = Math.min(...prices);
@@ -691,6 +712,9 @@ function renderComparisonPanel() {
         </div>
       </article>`;
   }).join('');
+  
+  if (grid) grid.innerHTML = gridHTML;
+  if (gridModal) gridModal.innerHTML = gridHTML;
 }
 
 function renderList() {
@@ -954,9 +978,7 @@ function setView(v) {
   document.getElementById('map-btn').classList.toggle('active', v === 'map');
   // Update bottom nav buttons
   const navHome = document.getElementById('nav-home');
-  const navMap = document.getElementById('nav-map');
   if (navHome) navHome.classList.toggle('active', v === 'list');
-  if (navMap) navMap.classList.toggle('active', v === 'map');
   if (v === 'map') {
     if (!map) renderMap();
     else {
@@ -1567,13 +1589,6 @@ document.getElementById('list-btn').addEventListener('click', () => setView('lis
 document.getElementById('map-btn').addEventListener('click', () => setView('map'));
 document.getElementById('nearme-btn').addEventListener('click', handleNearMe);
 document.getElementById('nationwide-btn').addEventListener('click', handleNationwide);
-document.getElementById('compare-btn')?.addEventListener('click', () => {
-  state.comparisonOpen = !state.comparisonOpen;
-  if (state.comparisonOpen && !state.comparisonItem) {
-    state.comparisonItem = state.searchQuery;
-  }
-  render();
-});
 document.getElementById('comparison-close')?.addEventListener('click', () => {
   state.comparisonOpen = false;
   render();
@@ -1583,7 +1598,20 @@ document.getElementById('compare-item-input')?.addEventListener('input', e => {
   state.comparisonLocations = [];
   renderComparisonPanel();
 });
+document.getElementById('compare-item-input-modal')?.addEventListener('input', e => {
+  state.comparisonItem = e.target.value.trim();
+  state.comparisonLocations = [];
+  renderComparisonPanel();
+});
 document.getElementById('compare-location-select')?.addEventListener('change', e => {
+  const key = e.target.value;
+  if (key && !state.comparisonLocations.includes(key)) {
+    state.comparisonLocations = [...state.comparisonLocations, key].slice(0, 6);
+    renderComparisonPanel();
+  }
+  e.target.value = '';
+});
+document.getElementById('compare-location-select-modal')?.addEventListener('change', e => {
   const key = e.target.value;
   if (key && !state.comparisonLocations.includes(key)) {
     state.comparisonLocations = [...state.comparisonLocations, key].slice(0, 6);
@@ -1597,16 +1625,20 @@ document.getElementById('comparison-selected')?.addEventListener('click', e => {
   state.comparisonLocations = state.comparisonLocations.filter(key => key !== chip.dataset.locationKey);
   renderComparisonPanel();
 });
+document.getElementById('comparison-selected-modal')?.addEventListener('click', e => {
+  const chip = e.target.closest('.comparison-chip');
+  if (!chip) return;
+  state.comparisonLocations = state.comparisonLocations.filter(key => key !== chip.dataset.locationKey);
+  renderComparisonPanel();
+});
 
 // ── Bottom Navigation (Mobile) ─────────────────────────────────────
 document.getElementById('nav-home')?.addEventListener('click', () => setView('list'));
-document.getElementById('nav-map')?.addEventListener('click', () => setView('map'));
 document.getElementById('nav-compare')?.addEventListener('click', () => {
-  state.comparisonOpen = !state.comparisonOpen;
-  if (state.comparisonOpen && !state.comparisonItem) {
-    state.comparisonItem = state.searchQuery;
-  }
-  render();
+  state.comparisonItem = state.searchQuery;
+  state.comparisonLocations = [];
+  openModal('comparison-modal');
+  renderComparisonPanel();
 });
 document.getElementById('nav-account')?.addEventListener('click', () => {
   if (state.token) {

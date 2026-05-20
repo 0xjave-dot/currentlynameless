@@ -74,7 +74,6 @@
     <div class="toolbar-right">
       <button class="btn btn-outline btn-sm" id="nearme-btn">📍 Near Me</button>
       <button class="btn btn-outline btn-sm" id="nationwide-btn">🌍 Nationwide</button>
-      <button class="btn btn-outline btn-sm" id="compare-btn">Compare</button>
       <button class="btn btn-primary btn-sm" id="report-btn" style="display:none;">+ Report Price</button>
       <div class="view-toggle">
         <button id="list-btn" class="active">☰ List</button>
@@ -156,13 +155,6 @@
       <path d="M3 12h18M3 6h18M3 18h18M5 9h14v6H5z"></path>
     </svg>
     <span>Home</span>
-  </button>
-  <button class="bottom-nav-item" id="nav-map" data-view="map" aria-label="Map">
-    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path>
-      <circle cx="12" cy="10" r="3"></circle>
-    </svg>
-    <span>Map</span>
   </button>
   <button class="bottom-nav-item" id="nav-compare" aria-label="Compare">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -283,6 +275,34 @@
       <div class="form-link">
         Already have an account? <a id="switch-to-login">Sign in</a>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: COMPARISON ─────────────────────────── -->
+<div class="modal-backdrop" id="comparison-modal" style="display:none;">
+  <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="comparison-modal-title">
+    <div class="modal-header">
+      <div>
+        <p class="auth-kicker">Price comparison</p>
+        <h2 id="comparison-modal-title">Compare prices across Nigeria</h2>
+        <p class="auth-subtitle">Select locations to compare prices for the same item.</p>
+      </div>
+      <button class="modal-close" data-close="comparison-modal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="compare-item-input">Item to compare</label>
+        <input type="search" id="compare-item-input-modal" placeholder="Use current search or type an item" />
+      </div>
+      <div class="form-group">
+        <label for="compare-location-select">Add a location</label>
+        <select id="compare-location-select-modal">
+          <option value="">Select from available locations</option>
+        </select>
+      </div>
+      <div class="comparison-selected" id="comparison-selected-modal"></div>
+      <div class="comparison-grid" id="comparison-grid-modal"></div>
     </div>
   </div>
 </div>
