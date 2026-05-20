@@ -952,6 +952,11 @@ function setView(v) {
   document.getElementById('map-view').style.display = v === 'map' ? 'block' : 'none';
   document.getElementById('list-btn').classList.toggle('active', v === 'list');
   document.getElementById('map-btn').classList.toggle('active', v === 'map');
+  // Update bottom nav buttons
+  const navHome = document.getElementById('nav-home');
+  const navMap = document.getElementById('nav-map');
+  if (navHome) navHome.classList.toggle('active', v === 'list');
+  if (navMap) navMap.classList.toggle('active', v === 'map');
   if (v === 'map') {
     if (!map) renderMap();
     else {
@@ -1591,6 +1596,31 @@ document.getElementById('comparison-selected')?.addEventListener('click', e => {
   if (!chip) return;
   state.comparisonLocations = state.comparisonLocations.filter(key => key !== chip.dataset.locationKey);
   renderComparisonPanel();
+});
+
+// ── Bottom Navigation (Mobile) ─────────────────────────────────────
+document.getElementById('nav-home')?.addEventListener('click', () => setView('list'));
+document.getElementById('nav-map')?.addEventListener('click', () => setView('map'));
+document.getElementById('nav-compare')?.addEventListener('click', () => {
+  state.comparisonOpen = !state.comparisonOpen;
+  if (state.comparisonOpen && !state.comparisonItem) {
+    state.comparisonItem = state.searchQuery;
+  }
+  render();
+});
+document.getElementById('nav-account')?.addEventListener('click', () => {
+  if (state.token) {
+    openModal('account-modal');
+  } else {
+    openModal('login-modal');
+  }
+});
+document.getElementById('nav-report')?.addEventListener('click', () => {
+  if (state.token) {
+    openModal('report-modal');
+  } else {
+    openModal('login-modal');
+  }
 });
 
 // ── Initial load ──────────────────────────────────────────────────

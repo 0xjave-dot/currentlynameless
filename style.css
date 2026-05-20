@@ -1613,7 +1613,7 @@ main {
   .form-row { grid-template-columns: 1fr; }
   #map { height: 380px; }
   .price-badge { font-size: 0.9rem; }
-  #toast-container { bottom: 16px; right: 16px; left: 16px; }
+  #toast-container { bottom: 100px; right: 16px; left: 16px; }
   .toast { max-width: 100%; }
   .modal-backdrop {
     align-items: flex-end;
@@ -1664,5 +1664,97 @@ main {
   }
   .account-modal-actions .btn {
     width: 100%;
+  }
+
+  /* ── Bottom Navigation ─────────────────────────── */
+  main {
+    padding-bottom: 100px;
+  }
+
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.95);
+    border-top: 1px solid rgba(124, 58, 237, 0.14);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 -4px 24px rgba(103, 80, 164, 0.12);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 200;
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 1;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: var(--clay-muted);
+    cursor: pointer;
+    transition: all 0.24s ease;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0;
+    position: relative;
+  }
+
+  .bottom-nav-item:active {
+    transform: scale(0.95);
+  }
+
+  .bottom-nav-item.active {
+    color: var(--clay-primary);
+  }
+
+  .bottom-nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--clay-primary);
+    border-radius: 0 0 3px 3px;
+  }
+
+  .bottom-nav-primary {
+    background: linear-gradient(135deg, var(--clay-primary-light), var(--clay-primary));
+    color: white;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  }
+
+  .bottom-nav-primary:hover {
+    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.4);
+  }
+
+  .bottom-nav-primary:active {
+    transform: translateX(-50%) scale(0.95);
+  }
+
+  .nav-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+  }
+
+  .bottom-nav-primary .nav-icon {
+    width: 28px;
+    height: 28px;
   }
 }
