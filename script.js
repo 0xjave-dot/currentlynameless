@@ -31,10 +31,137 @@ let state = {
   userLat: null,
   userLng: null,
   searchQuery: '',
-  // UI preferences
-  showDemo: true,
   layout: 'list', // 'list' or 'grid' for desktop/tablet
 };
+
+const DEMO_REPORTS = [
+  {
+    id: 'demo-1',
+    itemName: 'Rice (10kg)',
+    price: 5500,
+    availability: 'in_stock',
+    locationName: 'Yaba, Lagos',
+    lga: 'Yaba',
+    state: 'Lagos',
+    sellerPlace: 'Yaba Market',
+    lat: 6.5244,
+    lng: 3.3792,
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    imageUrl: 'https://images.unsplash.com/photo-1586080876-f0c6c773e8fe?w=200&q=80',
+  },
+  {
+    id: 'demo-2',
+    itemName: 'Eggs (Crate)',
+    price: 2800,
+    availability: 'in_stock',
+    locationName: 'Surulere, Lagos',
+    lga: 'Surulere',
+    state: 'Lagos',
+    sellerPlace: 'Surulere Shopping Complex',
+    lat: 6.5066,
+    lng: 3.3629,
+    timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    imageUrl: 'https://images.unsplash.com/photo-1585597022615-cd4628902d4a?w=200&q=80',
+  },
+  {
+    id: 'demo-3',
+    itemName: 'Tomatoes (Basket)',
+    price: 1200,
+    availability: 'limited',
+    locationName: 'Ibadan, Oyo',
+    lga: 'Ibadan North',
+    state: 'Oyo',
+    sellerPlace: 'Bodija Market',
+    lat: 7.3956,
+    lng: 3.9415,
+    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    imageUrl: 'https://images.unsplash.com/photo-1592924357615-eec7b52e0ec9?w=200&q=80',
+  },
+  {
+    id: 'demo-4',
+    itemName: 'Fuel (1 Liter)',
+    price: 750,
+    availability: 'in_stock',
+    locationName: 'Lekki, Lagos',
+    lga: 'Lekki',
+    state: 'Lagos',
+    sellerPlace: 'Lekki Phase 1 Filling Station',
+    lat: 6.4624,
+    lng: 3.5791,
+    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    imageUrl: 'https://images.unsplash.com/photo-1532996122724-8f3c2cd83c5d?w=200&q=80',
+  },
+  {
+    id: 'demo-5',
+    itemName: 'Garri (50kg)',
+    price: 18000,
+    availability: 'in_stock',
+    locationName: 'Benin City, Edo',
+    lga: 'Oredo',
+    state: 'Edo',
+    sellerPlace: 'Benin Central Market',
+    lat: 6.4956,
+    lng: 5.6271,
+    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    imageUrl: 'https://images.unsplash.com/photo-1599599810694-6f3ee9583a10?w=200&q=80',
+  },
+  {
+    id: 'demo-6',
+    itemName: 'Onions (1kg)',
+    price: 350,
+    availability: 'in_stock',
+    locationName: 'Kano, Kano',
+    lga: 'Kano Municipal',
+    state: 'Kano',
+    sellerPlace: 'Kano Central Market',
+    lat: 12.0022,
+    lng: 8.5920,
+    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    imageUrl: 'https://images.unsplash.com/photo-1508737763203-cd270b57fbbb?w=200&q=80',
+  },
+  {
+    id: 'demo-7',
+    itemName: 'Beans (5kg)',
+    price: 3500,
+    availability: 'in_stock',
+    locationName: 'Ife, Osun',
+    lga: 'Ife East',
+    state: 'Osun',
+    sellerPlace: 'Ife Market',
+    lat: 7.4951,
+    lng: 4.5571,
+    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+    imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200&q=80',
+  },
+  {
+    id: 'demo-8',
+    itemName: 'Milk (500ml)',
+    price: 650,
+    availability: 'in_stock',
+    locationName: 'Abuja, FCT',
+    lga: 'Garki',
+    state: 'FCT',
+    sellerPlace: 'Garki Shopping Complex',
+    lat: 9.0765,
+    lng: 7.3986,
+    timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b25a4ff?w=200&q=80',
+  },
+  {
+    id: 'demo-9',
+    itemName: 'Chicken (1kg)',
+    price: 4200,
+    availability: 'limited',
+    locationName: 'Abeokuta, Ogun',
+    lga: 'Abeokuta South',
+    state: 'Ogun',
+    sellerPlace: 'Abeokuta Central Market',
+    lat: 6.7949,
+    lng: 3.3436,
+    timestamp: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(),
+    imageUrl: 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=200&q=80',
+  },
+];
 
 const pageType = document.body?.dataset?.page || 'home';
 function isPage(page) {
@@ -443,11 +570,9 @@ async function loadReports() {
   try {
     if (USE_FIREBASE && firebaseDb) {
       state.allReports = await firebaseLoadReports();
-      // prepend demo reports when enabled (avoid duplicates by id)
-      if (state.showDemo) {
-        const demoEnriched = DEMO_REPORTS.map(enrichReport);
-        state.allReports = demoEnriched.concat(state.allReports.filter(r => !demoEnriched.find(d => d.id === r.id)));
-      }
+      // prepend demo reports (avoid duplicates by id)
+      const demoEnriched = DEMO_REPORTS.map(enrichReport);
+      state.allReports = demoEnriched.concat(state.allReports.filter(r => !demoEnriched.find(d => d.id === r.id)));
       state.reports = applyReportFilters(state.allReports);
       render();
       return;
@@ -455,11 +580,9 @@ async function loadReports() {
 
     const url = '/api/reports';
     state.allReports = await apiFetch(url, { method: 'GET', headers: {} });
-    // include demo reports conditionally
-    if (state.showDemo) {
-      const demoEnriched2 = DEMO_REPORTS.map(enrichReport);
-      state.allReports = demoEnriched2.concat(state.allReports.filter(r => !demoEnriched2.find(d => d.id === r.id)));
-    }
+    // include demo reports
+    const demoEnriched = DEMO_REPORTS.map(enrichReport);
+    state.allReports = demoEnriched.concat(state.allReports.filter(r => !demoEnriched.find(d => d.id === r.id)));
     state.reports = applyReportFilters(state.allReports);
     render();
   } catch (err) {
@@ -1740,11 +1863,7 @@ document.getElementById('map-btn')?.addEventListener('click', () => setView('map
 document.getElementById('nearme-btn')?.addEventListener('click', handleNearMe);
 document.getElementById('nationwide-btn')?.addEventListener('click', handleNationwide);
 document.getElementById('grid-layout-btn')?.addEventListener('click', () => setLayout(state.layout === 'grid' ? 'list' : 'grid'));
-document.getElementById('demo-toggle')?.addEventListener('change', e => {
-  state.showDemo = !!e.target.checked;
-  // reload reports to respect demo flag
-  loadReports();
-});
+
 document.getElementById('comparison-close')?.addEventListener('click', () => {
   state.comparisonOpen = false;
   render();

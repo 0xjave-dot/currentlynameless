@@ -1,0 +1,36 @@
+﻿diff --git a/style.css b/style.css
+index 81da89d..3b487a6 100644
+--- a/style.css
++++ b/style.css
+@@
+   .bottom-nav-item {
+     display: inline-flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     gap: 6px;
+     min-width: 60px;
+     border: none;
+     background: transparent;
+     color: var(--clay-muted);
+     cursor: pointer;
+     transition: transform 0.24s ease, color 0.24s ease, background 0.24s ease;
+     font-size: 0.72rem;
+     font-weight: 700;
+     text-decoration: none;
+     padding: 10px 8px;
+     border-radius: 18px;
+     position: relative;
+   }
++
++  .bottom-nav-item span {
++    display: none;
++  }
++
++  .bottom-nav-item.active span {
++    display: block;
++  }
+ 
+   .bottom-nav-item:hover {
+     color: var(--clay-foreground);
+   }

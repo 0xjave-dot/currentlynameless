@@ -1,0 +1,33 @@
+﻿
+  +  font-weight: 700;
+  +  margin-bottom: 18px;
+   }
+   
+>  .hero-metric span {
+  @@ -1597,8 +1602,33 @@ main {
+     font-weight: 600;
+   }
+   
+  +  line-height: 1.75;
+  +  margin-bottom: 0;
+  +}
+  +
+> +.bottom-nav {
+  +  display: none;
+  +}
+  +
+   /* ΓöÇΓöÇ Responsive ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓ
+öÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
+   @media (max-width: 640px) {
+> +  .bottom-nav {
+  +    display: grid;
+  +  }
+     .header-logo { font-size: 1rem; }
+     .user-email { display: none; }
+  +    color: var(--clay-muted);
+  +    line-height: 1.75;
+     }
+   
+>    .bottom-nav {
+
+
