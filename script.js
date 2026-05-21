@@ -552,7 +552,6 @@ async function requestUserLocation() {
         const nearBtn = document.getElementById('nearme-btn');
         if (nearBtn) {
           nearBtn.classList.add('active-nearme');
-          nearBtn.textContent = '✕ Near Me';
         }
         if (map) map.setView([state.userLat, state.userLng], 12);
         resolve(true);
@@ -818,7 +817,7 @@ function renderComparisonPanel() {
   // Update section display if it exists
   if (section) {
     section.style.display = state.comparisonOpen ? 'block' : 'none';
-    document.getElementById('compare-btn')?.classList.toggle('active-nearme', state.comparisonOpen);
+    document.getElementById('compare-btn')?.classList.toggle('active-compare', state.comparisonOpen);
   }
   
   // Only render if modal is open or section should be displayed
@@ -943,11 +942,17 @@ function renderList() {
   }
 
   if (reportsWithDistance.length === 0) {
+    const title = state.searchQuery ? 'No matches found' : 'No reports yet';
+    const description = state.searchQuery
+      ? `No listings match "${escHtml(state.searchQuery)}". Try broader terms or remove filters.`
+      : hasLocation
+        ? 'No reports were found near your current location. Try Nationwide or add a new price report.'
+        : 'Be the first to report a price in your area.';
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">📦</div>
-        <h3>No reports yet</h3>
-        <p>Be the first to report a price in your area.</p>
+        <h3>${title}</h3>
+        <p>${description}</p>
       </div>`;
     return;
   }
@@ -1243,7 +1248,6 @@ function handleNearMe() {
       state.userLng = pos.coords.longitude;
       state.nearMeActive = true;
       document.getElementById('nearme-btn').classList.add('active-nearme');
-      document.getElementById('nearme-btn').textContent = '✕ Near Me';
       if (map) map.setView([state.userLat, state.userLng], 13);
       state.reports = applyReportFilters(state.allReports);
       render();
@@ -1261,7 +1265,6 @@ function handleNationwide() {
   const nearBtn = document.getElementById('nearme-btn');
   if (nearBtn) {
     nearBtn.classList.remove('active-nearme');
-    nearBtn.textContent = 'ðŸ“ Near Me';
   }
   state.reports = applyReportFilters(state.allReports);
   render();
@@ -1274,21 +1277,26 @@ let pendingLat = null;
 let pendingLng = null;
 let pendingMedia = [];
 
-document.getElementById('get-location-btn').addEventListener('click', () => {
+document.getElementById('get-location-btn').addEventListener('click', async () => {
   if (!navigator.geolocation) {
     toast('Geolocation not supported.', 'error');
     return;
   }
-  document.getElementById('gps-status').textContent = 'Getting location…';
+  setGpsStatus('Getting your location…', true);
   navigator.geolocation.getCurrentPosition(
-    pos => {
+    async pos => {
       pendingLat = pos.coords.latitude;
       pendingLng = pos.coords.longitude;
-      document.getElementById('gps-status').textContent =
-        `✅ GPS: ${pendingLat.toFixed(5)}, ${pendingLng.toFixed(5)}`;
+      const place = await reverseGeocode(pendingLat, pendingLng);
+      const label = place || `${pendingLat.toFixed(5)}, ${pendingLng.toFixed(5)}`;
+      setGpsStatus(`✅ GPS set: ${label}`, false);
+      const locationInput = document.getElementById('report-location-name');
+      if (locationInput && !locationInput.value.trim() && place) {
+        locationInput.value = place;
+      }
     },
     err => {
-      document.getElementById('gps-status').textContent = 'Failed: ' + err.message;
+      setGpsStatus('Failed: ' + err.message, false);
       toast('Location error: ' + err.message, 'error');
     },
     { enableHighAccuracy: true, timeout: 8000 }
@@ -1440,9 +1448,15 @@ function renderAccountSection() {
   if (!myReports.length) {
     listings.innerHTML = `
       <div class="account-empty">
-        <strong>No listings yet</strong>
-        <p>Report a price to start building your account history and trust score.</p>
+        <strong>You haven't reported any prices yet.</strong>
+        <p>Help your community — report one now.</p>
+        <button class="btn btn-primary btn-sm" id="account-empty-report-btn">Report now</button>
       </div>`;
+    setTimeout(() => {
+      document.getElementById('account-empty-report-btn')?.addEventListener('click', () => {
+        window.location.href = 'report.html';
+      });
+    }, 0);
   } else {
     listings.innerHTML = myReports.slice(0, 5).map(report => `
       <div class="account-listing-item">
@@ -1453,6 +1467,73 @@ function renderAccountSection() {
     `).join('');
   }
   section.style.display = 'block';
+  updateTrustRing(trustScore, 'account-trust-ring');
+}
+
+function updateTrustRing(score, elementId) {
+  const ring = document.getElementById(elementId);
+  if (!ring) return;
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const ratio = Math.max(0, Math.min(100, Number(score))) / 100;
+  ring.style.strokeDasharray = `${circumference} ${circumference}`;
+  ring.style.strokeDashoffset = `${circumference * (1 - ratio)}`;
+}
+
+function setFieldValidation(inputId, message) {
+  const input = document.getElementById(inputId);
+  const error = document.getElementById(`${inputId}-error`);
+  if (input) input.classList.toggle('field-invalid', !!message);
+  if (error) error.textContent = message || '';
+}
+
+function clearReportValidation() {
+  ['report-item', 'report-price', 'report-location-name', 'report-state'].forEach(id => setFieldValidation(id, ''));
+}
+
+function validateReportForm() {
+  clearReportValidation();
+  let valid = true;
+  const itemName = document.getElementById('report-item').value.trim();
+  const price = document.getElementById('report-price').value;
+  const locationName = document.getElementById('report-location-name').value.trim();
+  const stateName = document.getElementById('report-state').value;
+
+  if (!itemName || itemName.length < 3) {
+    setFieldValidation('report-item', 'Item name must be at least 3 characters.');
+    valid = false;
+  }
+  if (!price || isNaN(Number(price)) || Number(price) < 0) {
+    setFieldValidation('report-price', 'Enter a valid price.');
+    valid = false;
+  }
+  if (!locationName) {
+    setFieldValidation('report-location-name', 'Provide the market, shop, or neighborhood.');
+    valid = false;
+  }
+  if (!stateName) {
+    setFieldValidation('report-state', 'Select the state where this price was reported.');
+    valid = false;
+  }
+  return valid;
+}
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=12&addressdetails=1`);
+    if (!response.ok) throw new Error('Failed to resolve location');
+    const data = await response.json();
+    return data.display_name || data.name || '';
+  } catch {
+    return '';
+  }
+}
+
+function setGpsStatus(message, loading = false) {
+  const status = document.getElementById('gps-status');
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle('gps-loading', loading);
 }
 
 function renderAccountModal() {
@@ -1477,6 +1558,7 @@ function renderAccountModal() {
   setText('account-modal-votes', totalVotes);
   setText('account-modal-upvotes', upvotes);
   setText('account-modal-debunks', debunks);
+  updateTrustRing(trustScore, 'account-modal-trust-ring');
 
   const listings = document.getElementById('account-modal-listing-list');
   if (!listings) return;
@@ -1783,6 +1865,12 @@ document.getElementById('report-btn')?.addEventListener('click', () => {
 });
 
 document.getElementById('report-submit').addEventListener('click', async () => {
+  clearReportValidation();
+  if (!validateReportForm()) {
+    showError('report-error', 'Please resolve the highlighted fields before submitting.');
+    return;
+  }
+
   const itemName = document.getElementById('report-item').value.trim();
   const price = document.getElementById('report-price').value;
   const availability = document.getElementById('report-avail').value;
@@ -1794,12 +1882,6 @@ document.getElementById('report-submit').addEventListener('click', async () => {
   const measurementLabel = measurement === 'custom' ? customMeasurement || 'Custom' : measurement;
   const sellerPlace = document.getElementById('report-seller-place').value.trim();
   const sellerContact = document.getElementById('report-seller-contact').value.trim();
-
-  if (!itemName) { showError('report-error', 'Item name is required.'); return; }
-  if (!price || isNaN(Number(price)) || Number(price) < 0) {
-    showError('report-error', 'Enter a valid price.');
-    return;
-  }
 
   let lat = pendingLat;
   let lng = pendingLng;
@@ -1853,6 +1935,16 @@ document.getElementById('report-submit').addEventListener('click', async () => {
     btn.disabled = false;
     btn.textContent = 'Submit Report';
   }
+});
+
+['report-item', 'report-price', 'report-location-name', 'report-state'].forEach(id => {
+  const input = document.getElementById(id);
+  if (!input) return;
+  input.addEventListener('input', () => {
+    setFieldValidation(id, '');
+    const reportError = document.getElementById('report-error');
+    if (reportError) reportError.textContent = '';
+  });
 });
 
 // ── Search ────────────────────────────────────────────────────────
@@ -1925,6 +2017,11 @@ document.getElementById('comparison-open-btn')?.addEventListener('click', () => 
   state.comparisonItem = state.searchQuery;
   state.comparisonLocations = [];
   openModal('comparison-modal');
+  renderComparisonPanel();
+});
+
+document.getElementById('compare-btn')?.addEventListener('click', () => {
+  state.comparisonOpen = !state.comparisonOpen;
   renderComparisonPanel();
 });
 

@@ -38,10 +38,6 @@
       <div class="hero-eyebrow">Your account</div>
       <h1>Manage your profile, trust score, and uploads.</h1>
       <p>Access your account dashboard, report history, and local reputation data.</p>
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="hero-report-btn">Report a price</button>
-        <button class="btn btn-outline" id="hero-login-btn">Sign in</button>
-      </div>
     </div>
   </section>
 
@@ -54,7 +50,14 @@
         </div>
         <div class="account-score">
           <span>Trust Score</span>
-          <strong id="account-trust">0</strong>
+          <div class="trust-ring">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <circle class="trust-ring-bg" cx="50" cy="50" r="40"></circle>
+              <circle class="trust-ring-fill" id="account-trust-ring" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+            </svg>
+            <div class="trust-ring-label"><strong id="account-trust">0</strong><span>/ 100</span></div>
+          </div>
+          <p class="trust-guidance">Report prices to build your score.</p>
         </div>
       </div>
       <div class="account-page-grid">

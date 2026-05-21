@@ -107,9 +107,9 @@ header {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 18px;
   overflow: hidden;
   background: linear-gradient(135deg, rgba(167,139,250,0.95), rgba(124,58,237,0.95));
   box-shadow: 8px 10px 24px rgba(124,58,237,0.22), inset -2px -2px 6px rgba(255,255,255,0.28);
@@ -1654,6 +1654,83 @@ main {
 
 .form-error.visible { display: block; }
 
+.field-error {
+  color: var(--red);
+  font-size: 0.84rem;
+  margin-top: 6px;
+  min-height: 1.2em;
+  display: block;
+}
+
+.field-invalid {
+  border-color: #f87171 !important;
+  box-shadow: 0 0 0 3px rgba(251,113,113,0.16);
+}
+
+.toolbar-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+
+.gps-status {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gps-status.gps-loading::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(124,58,237,0.24);
+  border-top-color: var(--clay-primary);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+.trust-ring {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.trust-ring svg {
+  width: 84px;
+  height: 84px;
+  transform: rotate(-90deg);
+}
+
+.trust-ring-bg {
+  fill: none;
+  stroke: rgba(124,58,237,0.12);
+  stroke-width: 10;
+}
+
+.trust-ring-fill {
+  fill: none;
+  stroke: var(--clay-primary);
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s ease;
+}
+
+.trust-ring-label {
+  text-align: left;
+}
+
+.trust-ring-label strong {
+  display: block;
+  font-size: 1.5rem;
+}
+
+.trust-guidance {
+  color: var(--clay-muted);
+  font-size: 0.92rem;
+  margin-top: 10px;
+}
+
 /* ── Location row ────────────────────────────────── */
 .loc-row {
   display: flex;
@@ -1702,10 +1779,35 @@ main {
 }
 
 /* ── Near-me active ──────────────────────────────── */
-.btn.active-nearme {
+.btn.active-nearme,
+.btn.active-compare {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
+  box-shadow: 0 12px 30px rgba(124,58,237,0.22), inset -2px -2px 12px rgba(255,255,255,0.2);
+}
+
+#compare-btn {
+  min-width: 122px;
+}
+
+.trust-ring svg {
+  width: 96px;
+  height: 96px;
+}
+
+.trust-ring-fill {
+  fill: none;
+  stroke: var(--clay-primary);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 251.2;
+  stroke-dashoffset: 251.2;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease;
+}
+
+.trust-ring-label strong {
+  font-size: 1.6rem;
 }
 
 .nearby-status {

@@ -38,10 +38,6 @@
       <div class="hero-eyebrow">Report a price</div>
       <h1>Share trusted local prices from your area.</h1>
       <p>Submit item, price, and location details so your community can see the latest verified reports.</p>
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="hero-report-btn">Report now</button>
-        <button class="btn btn-outline" id="hero-login-btn">Sign in</button>
-      </div>
     </div>
   </section>
 
@@ -68,11 +64,13 @@
         <div class="form-group">
           <label for="report-item">Item Name</label>
           <input type="text" id="report-item" placeholder="e.g. Bag of Rice (50kg)" />
+          <span class="field-error" id="report-item-error"></span>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label for="report-price">Price (₦)</label>
             <input type="number" id="report-price" placeholder="e.g. 85000" min="0" step="1" />
+            <span class="field-error" id="report-price-error"></span>
           </div>
           <div class="form-group measurement-group">
             <label for="report-measurement">Measurement</label>
@@ -100,9 +98,10 @@
           <label>Location</label>
           <div class="loc-row">
             <input type="text" id="report-location-name" placeholder="e.g. Mile 12 Market, Lagos" />
-            <button class="btn btn-outline btn-sm" id="get-location-btn" title="Use my GPS location">📍 GPS</button>
+            <button class="btn btn-outline btn-sm" id="get-location-btn" title="Use my GPS location"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg></span><span>GPS</span></button>
           </div>
-          <div style="font-size:0.78rem; color:var(--gray-400); margin-top:4px;" id="gps-status">GPS not set</div>
+          <span class="field-error" id="report-location-error"></span>
+          <div class="gps-status" id="gps-status">GPS not set</div>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -123,6 +122,7 @@
               <option value="Niger">Niger</option>
               <option value="Other">Other</option>
             </select>
+            <span class="field-error" id="report-state-error"></span>
           </div>
           <div class="form-group">
             <label for="report-lga">LGA</label>

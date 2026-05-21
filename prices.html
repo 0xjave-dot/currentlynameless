@@ -38,10 +38,6 @@
       <div class="hero-eyebrow">Price search</div>
       <h1>Search prices near you or nationwide.</h1>
       <p>Use search, Near Me, Nationwide, and Compare to find the freshest price data for your area.</p>
-      <div class="hero-actions">
-        <button class="btn btn-primary" id="comparison-open-btn">Compare listings</button>
-        <button class="btn btn-outline" id="hero-login-btn">Sign in</button>
-      </div>
     </div>
   </section>
 
@@ -52,13 +48,14 @@
         <input id="search-input" type="search" aria-label="Search listings" placeholder="Search goods, markets, sellers, states..." />
       </div>
       <div class="toolbar-right">
-        <button class="btn btn-outline btn-sm" id="nearme-btn">📍 Near Me</button>
-        <button class="btn btn-outline btn-sm" id="nationwide-btn">🌍 Nationwide</button>
+        <button class="btn btn-outline btn-sm" id="nearme-btn"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></span><span>Near Me</span></button>
+        <button class="btn btn-outline btn-sm" id="nationwide-btn"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0 0 20"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/><path d="M12 2c4 4 4 14 0 18"/></svg></span><span>Nationwide</span></button>
+        <button class="btn btn-primary btn-sm" id="compare-btn"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span><span>Compare</span></button>
         <button class="btn btn-primary btn-sm" id="report-btn" style="display:none;">+ Report Price</button>
         <div class="view-toggle">
           <button id="list-btn" class="active">☰ List</button>
-          <button id="map-btn">🗺 Map</button>
-          <button id="grid-layout-btn" title="Toggle grid layout">▦ Grid</button>
+          <button id="map-btn"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l7-2 7 2 4-1v13l-7 2-7-2-4 1V6z"/></svg></span><span>Map</span></button>
+          <button id="grid-layout-btn" title="Toggle grid layout"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></span><span>Grid</span></button>
         </div>
 
       </div>
