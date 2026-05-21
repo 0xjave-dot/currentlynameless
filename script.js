@@ -1287,12 +1287,33 @@ document.getElementById('get-location-btn').addEventListener('click', async () =
     async pos => {
       pendingLat = pos.coords.latitude;
       pendingLng = pos.coords.longitude;
-      const place = await reverseGeocode(pendingLat, pendingLng);
-      const label = place || `${pendingLat.toFixed(5)}, ${pendingLng.toFixed(5)}`;
+      const geo = await reverseGeocode(pendingLat, pendingLng);
+      const label = (geo && (geo.display_name || geo.name)) || `${pendingLat.toFixed(5)}, ${pendingLng.toFixed(5)}`;
       setGpsStatus(`✅ GPS set: ${label}`, false);
       const locationInput = document.getElementById('report-location-name');
-      if (locationInput && !locationInput.value.trim() && place) {
-        locationInput.value = place;
+      if (locationInput && !locationInput.value.trim() && geo && geo.display_name) {
+        locationInput.value = geo.display_name;
+      }
+
+      // Autofill state and LGA where possible from the address parts
+      if (geo && geo.address) {
+        const addr = geo.address;
+        const stateVal = addr.state || addr.region || addr.county || addr.state_district || addr['province'] || '';
+        const lgaVal = addr.county || addr.city || addr.town || addr.village || addr.suburb || addr.neighbourhood || addr.hamlet || '';
+
+        if (stateVal) {
+          const select = document.getElementById('report-state');
+          if (select) {
+            const match = Array.from(select.options).find(o => o.value && o.value.toLowerCase() === stateVal.toLowerCase())
+              || Array.from(select.options).find(o => o.textContent.toLowerCase().includes(stateVal.toLowerCase()));
+            if (match) select.value = match.value;
+          }
+        }
+
+        if (lgaVal) {
+          const lgaInput = document.getElementById('report-lga');
+          if (lgaInput && !lgaInput.value.trim()) lgaInput.value = lgaVal;
+        }
       }
     },
     err => {
@@ -1520,12 +1541,14 @@ function validateReportForm() {
 
 async function reverseGeocode(lat, lng) {
   try {
-    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=12&addressdetails=1`);
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=14&addressdetails=1`);
     if (!response.ok) throw new Error('Failed to resolve location');
     const data = await response.json();
-    return data.display_name || data.name || '';
-  } catch {
-    return '';
+    // Return the full response so calling code can extract display name and address parts
+    return data;
+  } catch (err) {
+    console.warn('reverseGeocode error', err);
+    return null;
   }
 }
 
