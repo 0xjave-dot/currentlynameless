@@ -20,6 +20,7 @@ let state = {
   token: localStorage.getItem('lp_token') || null,
   email: localStorage.getItem('lp_email') || null,
   userId: localStorage.getItem('lp_userId') || null,
+  deviceHash: localStorage.getItem('lp_device_hash') || null,
   accountProfile: null,
   allReports: [],
   reports: [],
@@ -1839,7 +1840,7 @@ document.getElementById('login-submit').addEventListener('click', async () => {
       ? await firebaseLogin(email, password)
       : await apiFetch('/api/login', {
           method: 'POST',
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email, password, deviceHash: await getDeviceHash() }),
         });
     setSession(data.token, data.email, data.userId, data.profile);
     closeModal('login-modal');
@@ -1910,7 +1911,7 @@ document.getElementById('register-submit').addEventListener('click', async () =>
       ? await firebaseRegister(email, password)
       : await apiFetch('/api/register', {
           method: 'POST',
-          body: JSON.stringify({ email, password, name, location }),
+          body: JSON.stringify({ email, password, name, location, deviceHash: await getDeviceHash() }),
         });
     setSession(data.token, data.email, data.userId, data.profile);
     saveAccountProfile({ ...state.accountProfile, name, location });
@@ -1989,6 +1990,7 @@ document.getElementById('report-submit').addEventListener('click', async () => {
       sellerPlace,
       sellerContact,
       media: pendingMedia,
+      deviceHash: await getDeviceHash(),
     };
 
     if (USE_FIREBASE && firebaseDb) {

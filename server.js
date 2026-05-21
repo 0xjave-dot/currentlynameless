@@ -66,8 +66,9 @@ function computeConfidence(report) {
 }
 
 function enrichReport(report) {
+  const { deviceHash, ...publicReport } = report;
   return {
-    ...report,
+    ...publicReport,
     upvoteCount: report.upvotes.length,
     debunkCount: report.debunks.length,
     totalVotes: report.upvotes.length + report.debunks.length,
@@ -125,9 +126,14 @@ function publicUser(user) {
   };
 }
 
+function normalizeDeviceHash(hash) {
+  return hash && typeof hash === 'string' ? hash.trim().toLowerCase() : '';
+}
+
 app.post('/api/register', async (req, res) => {
   try {
-    const { email, password, name, location, state: stateName, lga } = req.body;
+    const { email, password, name, location, state: stateName, lga, deviceHash } = req.body;
+    const normalizedDeviceHash = normalizeDeviceHash(deviceHash);
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
@@ -145,11 +151,19 @@ app.post('/api/register', async (req, res) => {
       return res.status(409).json({ error: 'An account with this email already exists' });
     }
 
+    if (normalizedDeviceHash) {
+      const sameDeviceUser = users.find((u) => Array.isArray(u.deviceHashes) && u.deviceHashes.includes(normalizedDeviceHash));
+      if (sameDeviceUser) {
+        return res.status(409).json({ error: 'This device is already linked to another account. Please sign in instead.' });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     const newUser = {
       id: generateId(),
       email: email.toLowerCase().trim(),
       hashedPassword,
+      deviceHashes: normalizedDeviceHash ? [normalizedDeviceHash] : [],
       profile: sanitizeProfile({ name, location, state: stateName, lga }),
       createdAt: new Date().toISOString(),
     };
@@ -170,7 +184,8 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, deviceHash } = req.body;
+    const normalizedDeviceHash = normalizeDeviceHash(deviceHash);
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
@@ -185,6 +200,14 @@ app.post('/api/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.hashedPassword);
     if (!match) {
       return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    if (normalizedDeviceHash) {
+      user.deviceHashes = Array.isArray(user.deviceHashes) ? user.deviceHashes : [];
+      if (!user.deviceHashes.includes(normalizedDeviceHash)) {
+        user.deviceHashes.push(normalizedDeviceHash);
+        writeUsers(users);
+      }
     }
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
@@ -292,6 +315,7 @@ app.post('/api/reports', authMiddleware, (req, res) => {
       sellerPlace,
       sellerContact,
       media,
+      deviceHash,
     } = req.body;
 
     if (!itemName || itemName.trim().length === 0) {
@@ -322,6 +346,7 @@ app.post('/api/reports', authMiddleware, (req, res) => {
       lga: lga ? lga.trim() : '',
       sellerPlace: sellerPlace ? sellerPlace.trim() : '',
       sellerContact: sellerContact ? sellerContact.trim() : '',
+      deviceHash: normalizeDeviceHash(deviceHash),
       media: Array.isArray(media) ? media : [],
       comments: [],
       timestamp: new Date().toISOString(),
