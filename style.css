@@ -13,6 +13,7 @@ body {
   min-height: 100vh;
   line-height: 1.6;
   overflow-x: hidden;
+  padding-top: 88px; /* space for fixed header */
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -76,9 +77,11 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Header ─────────────────────────────────────── */
 header {
-  position: sticky;
-  top: 16px;
-  z-index: 100;
+  position: fixed;
+  top: 12px;
+  left: 0;
+  right: 0;
+  z-index: 200;
   padding: 0 16px;
 }
 

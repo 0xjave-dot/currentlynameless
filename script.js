@@ -1314,6 +1314,21 @@ document.getElementById('get-location-btn').addEventListener('click', async () =
           const lgaInput = document.getElementById('report-lga');
           if (lgaInput && !lgaInput.value.trim()) lgaInput.value = lgaVal;
         }
+
+        // Show a short confirmation toast if we autofilled anything
+        try {
+          const filledState = (document.getElementById('report-state') && document.getElementById('report-state').value) || stateVal || '';
+          const filledLga = (document.getElementById('report-lga') && document.getElementById('report-lga').value) || lgaVal || '';
+          if (filledState || filledLga) {
+            const niceState = filledState && (document.getElementById('report-state').selectedOptions?.[0]?.textContent || filledState);
+            const msgParts = [];
+            if (niceState) msgParts.push(`State: ${niceState}`);
+            if (filledLga) msgParts.push(`LGA: ${filledLga}`);
+            if (msgParts.length) toast(`Autofilled ${msgParts.join(', ')} — please confirm`, 'success', 5000);
+          }
+        } catch (e) {
+          // ignore toast failures
+        }
       }
     },
     err => {
