@@ -1775,6 +1775,24 @@ main {
 .toast.error { background: var(--red); }
 .toast.info { background: var(--blue); }
 
+/* Toast action button */
+.toast { display: inline-flex; gap: 12px; align-items: center; }
+.toast .toast-text { flex: 1; }
+.toast .toast-undo {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.18);
+  color: inherit;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.toast .toast-undo:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* slide out animation when removed by JS (optional) */
+.toast.toast-out { animation: toastOut 0.18s ease forwards; }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateX(16px); } }
+
 /* ── Leaflet popup override ──────────────────────── */
 .leaflet-popup-content-wrapper {
   border-radius: 10px !important;
@@ -2019,5 +2037,18 @@ main {
   .bottom-nav-primary:active {
     box-shadow: none;
   }
+}
+
+/* Responsive header spacing: less top padding on small screens */
+@media (max-width: 480px) {
+  body { padding-top: 72px; }
+  header { top: 8px; }
+  .header-inner { padding: 10px 14px; }
+}
+
+@media (min-width: 1200px) {
+  body { padding-top: 96px; }
+  header { top: 16px; }
+  .header-inner { padding: 14px 22px; }
 }
 

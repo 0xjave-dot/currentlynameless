@@ -364,6 +364,29 @@ function toast(msg, type = 'info', duration = 3500) {
   setTimeout(() => el.remove(), duration);
 }
 
+// Toast with undo button. `undoCallback` is called if user clicks Undo.
+function toastWithUndo(msg, undoCallback, type = 'info', duration = 6000) {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const text = document.createElement('span');
+  text.className = 'toast-text';
+  text.textContent = msg;
+  el.appendChild(text);
+
+  const action = document.createElement('button');
+  action.className = 'toast-undo';
+  action.type = 'button';
+  action.textContent = 'Undo';
+  action.addEventListener('click', () => {
+    try { if (typeof undoCallback === 'function') undoCallback(); } catch (e) { console.warn('undo failed', e); }
+    el.remove();
+  });
+  el.appendChild(action);
+
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
 // ── Auth header ───────────────────────────────────────────────────
 function authHeaders() {
   return state.token ? { Authorization: `Bearer ${state.token}` } : {};
@@ -1324,7 +1347,17 @@ document.getElementById('get-location-btn').addEventListener('click', async () =
             const msgParts = [];
             if (niceState) msgParts.push(`State: ${niceState}`);
             if (filledLga) msgParts.push(`LGA: ${filledLga}`);
-            if (msgParts.length) toast(`Autofilled ${msgParts.join(', ')} — please confirm`, 'success', 5000);
+            if (msgParts.length) {
+              // allow user to undo the autofill
+              toastWithUndo(`Autofilled ${msgParts.join(', ')} — please confirm`, () => {
+                try {
+                  const sel = document.getElementById('report-state');
+                  if (sel && stateVal) sel.value = '';
+                  const lgaInput = document.getElementById('report-lga');
+                  if (lgaInput && lgaVal) lgaInput.value = '';
+                } catch (e) { console.warn('undo autofill', e); }
+              }, 'success', 6000);
+            }
           }
         } catch (e) {
           // ignore toast failures
