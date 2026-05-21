@@ -1082,7 +1082,7 @@ function reportCardHTML(r, isNearest = false) {
             <strong>Listing location</strong>
             <p>${escHtml(locationLabel)}</p>
             ${hasLocationDetails ? '' : `<p>Coordinates are used only for mapping and verification.</p>`}
-            <p><a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}" target="_blank" rel="noreferrer">Open in maps</a></p>
+            <p><a href="https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}" target="_blank" rel="noreferrer">Get directions</a></p>
           </div>
           ${r.sellerContact ? `<div class="report-seller-contact"><strong>Seller contact</strong><p>${escHtml(r.sellerContact)}</p></div>` : ''}
           ${mediaMarkup}
@@ -1325,11 +1325,16 @@ document.getElementById('get-location-btn').addEventListener('click', async () =
         const lgaVal = addr.county || addr.city || addr.town || addr.village || addr.suburb || addr.neighbourhood || addr.hamlet || '';
 
         if (stateVal) {
-          const select = document.getElementById('report-state');
-          if (select) {
-            const match = Array.from(select.options).find(o => o.value && o.value.toLowerCase() === stateVal.toLowerCase())
-              || Array.from(select.options).find(o => o.textContent.toLowerCase().includes(stateVal.toLowerCase()));
-            if (match) select.value = match.value;
+          const stateField = document.getElementById('report-state');
+          const stateList = document.getElementById('report-state-list');
+          if (stateField) {
+            if (stateList) {
+              const match = Array.from(stateList.options).find(o => o.value && o.value.toLowerCase() === stateVal.toLowerCase())
+                || Array.from(stateList.options).find(o => o.value.toLowerCase().includes(stateVal.toLowerCase()));
+              stateField.value = match ? match.value : stateVal;
+            } else {
+              stateField.value = stateVal;
+            }
           }
         }
 
@@ -1343,16 +1348,15 @@ document.getElementById('get-location-btn').addEventListener('click', async () =
           const filledState = (document.getElementById('report-state') && document.getElementById('report-state').value) || stateVal || '';
           const filledLga = (document.getElementById('report-lga') && document.getElementById('report-lga').value) || lgaVal || '';
           if (filledState || filledLga) {
-            const niceState = filledState && (document.getElementById('report-state').selectedOptions?.[0]?.textContent || filledState);
+            const niceState = filledState;
             const msgParts = [];
             if (niceState) msgParts.push(`State: ${niceState}`);
             if (filledLga) msgParts.push(`LGA: ${filledLga}`);
             if (msgParts.length) {
-              // allow user to undo the autofill
               toastWithUndo(`Autofilled ${msgParts.join(', ')} — please confirm`, () => {
                 try {
-                  const sel = document.getElementById('report-state');
-                  if (sel && stateVal) sel.value = '';
+                  const stateField = document.getElementById('report-state');
+                  if (stateField && stateVal) stateField.value = '';
                   const lgaInput = document.getElementById('report-lga');
                   if (lgaInput && lgaVal) lgaInput.value = '';
                 } catch (e) { console.warn('undo autofill', e); }
@@ -1581,7 +1585,7 @@ function validateReportForm() {
     valid = false;
   }
   if (!stateName) {
-    setFieldValidation('report-state', 'Select the state where this price was reported.');
+    setFieldValidation('report-state', 'Enter the state where this price was reported.');
     valid = false;
   }
   return valid;
