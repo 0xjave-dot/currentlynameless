@@ -1325,7 +1325,8 @@ main {
 
 /* Bottom-sheet listing modal */
 .listing-backdrop { align-items: flex-end; }
-.listing-modal.bottom-sheet { width: 100%; max-width: 820px; border-top-left-radius: 12px; border-top-right-radius: 12px; margin: 0; padding: 16px; box-sizing: border-box; }
+.listing-modal.bottom-sheet { width: 100%; max-width: 820px; border-top-left-radius: 12px; border-top-right-radius: 12px; margin: 0; padding: 16px; box-sizing: border-box; transform: translateY(100%); opacity:0; transition: transform 280ms cubic-bezier(.22,.9,.18,1), opacity 180ms ease; }
+.listing-backdrop.show .listing-modal.bottom-sheet { transform: translateY(0); opacity:1; }
 .listing-modal.bottom-sheet .modal-body { max-height: 60vh; overflow:auto; }
 .listing-modal.bottom-sheet .modal-header { padding-bottom: 8px; }
 .listing-modal .item-name { margin:0; font-size:1.05rem; }

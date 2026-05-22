@@ -1596,12 +1596,29 @@ document.getElementById('report-media')?.addEventListener('change', async event 
 function openModal(id) {
   if (id === 'account-modal') renderAccountModal();
   if (id === 'profile-modal') populateProfileForm();
-  document.getElementById(id).style.display = 'flex';
+  const el = document.getElementById(id);
+  if (!el) return;
+  // For listing bottom-sheet, add show class to animate slide-up
+  if (id === 'listing-modal') {
+    el.style.display = 'flex';
+    // allow a frame for CSS to pick up
+    requestAnimationFrame(() => el.classList.add('show'));
+  } else {
+    el.style.display = 'flex';
+  }
   clearModalErrors();
 }
 
 function closeModal(id) {
-  document.getElementById(id).style.display = 'none';
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (id === 'listing-modal') {
+    el.classList.remove('show');
+    // wait for animation to finish before hiding
+    setTimeout(() => { el.style.display = 'none'; }, 300);
+  } else {
+    el.style.display = 'none';
+  }
 }
 
 function clearModalErrors() {
@@ -2412,7 +2429,10 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
     // Prices page: always show list/grid view (map is on the dedicated map page)
     setView('list');
   } else if (isPage('map')) {
-    // If we're on the dedicated map page, open the map view
+    // If we're on the dedicated map page, attempt to center on the user's location then open the map view
+    try {
+      await requestUserLocation();
+    } catch (e) {}
     setView('map');
   } else if (isPage('account')) {
     renderAccountSection();
