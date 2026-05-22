@@ -169,9 +169,22 @@ function isPage(page) {
   return pageType === page;
 }
 
+function setActiveNav() {
+  document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+  const path = window.location.pathname.split('/').pop() || 'index.html';
+  const params = new URLSearchParams(window.location.search || '');
+  if (path === '' || path === 'index.html') document.getElementById('nav-home')?.classList.add('active');
+  else if (path === 'prices.html') {
+    if (params.get('view') === 'map') document.getElementById('nav-map')?.classList.add('active');
+    else document.getElementById('nav-prices')?.classList.add('active');
+  } else if (path === 'report.html') document.getElementById('nav-report')?.classList.add('active');
+  else if (path === 'account.html') document.getElementById('nav-account')?.classList.add('active');
+}
+
 // ── Map ───────────────────────────────────────────────────────────
 let map = null;
 let markers = [];
+let markerClusterGroup = null;
 
 // ── Utils ─────────────────────────────────────────────────────────
 function timeAgo(isoString) {
@@ -1187,8 +1200,8 @@ function renderMap() {
       subdomains: ['a', 'b', 'c'],
     }).addTo(map);
   }
-
-  // Clear existing markers
+  // Clear existing markers and clusters
+  try { if (markerClusterGroup) { markerClusterGroup.clearLayers(); markerClusterGroup = null; } } catch (e) {}
   markers.forEach(m => m.remove());
   markers = [];
 
@@ -1198,18 +1211,26 @@ function renderMap() {
   }
 
   const bounds = [];
+  const useClustering = typeof L.markerClusterGroup === 'function' || (L && L.markerClusterGroup);
+  if (useClustering) {
+    try {
+      markerClusterGroup = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 48 });
+    } catch (e) { markerClusterGroup = null; }
+  }
 
   state.reports.forEach(r => {
     const color = { in_stock: '#16a34a', limited: '#d97706', out_of_stock: '#dc2626' }[r.availability] || '#6b7280';
 
+    const iconSize = 22;
+    const iconBorder = 3;
     const icon = L.divIcon({
-      className: '',
-      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>`,
-      iconSize: [14, 14],
-      iconAnchor: [7, 7],
+      className: 'lp-map-pin',
+      html: `<div style="width:${iconSize}px;height:${iconSize}px;border-radius:50%;background:${color};border:${iconBorder}px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.25);"></div>`,
+      iconSize: [iconSize, iconSize],
+      iconAnchor: [Math.round(iconSize/2), Math.round(iconSize/2)],
     });
 
-    const marker = L.marker([r.lat, r.lng], { icon }).addTo(map);
+    const marker = L.marker([r.lat, r.lng], { icon });
 
     const canVote = state.token && r.userId !== state.userId;
     const alreadyVoted = state.token && (r.upvotes.includes(state.userId) || r.debunks.includes(state.userId));
@@ -1238,7 +1259,11 @@ function renderMap() {
 
     bounds.push([r.lat, r.lng]);
     markers.push(marker);
+    if (markerClusterGroup) markerClusterGroup.addLayer(marker);
+    else marker.addTo(map);
   });
+
+  if (markerClusterGroup) map.addLayer(markerClusterGroup);
 
   if (bounds.length > 0 && !state.nearMeActive) {
     try { map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 }); } catch {}
@@ -2095,6 +2120,7 @@ document.getElementById('map-btn')?.addEventListener('click', () => setView('map
 document.getElementById('nearme-btn')?.addEventListener('click', handleNearMe);
 document.getElementById('nationwide-btn')?.addEventListener('click', handleNationwide);
 document.getElementById('grid-layout-btn')?.addEventListener('click', () => setLayout(state.layout === 'grid' ? 'list' : 'grid'));
+document.getElementById('map-toggle')?.addEventListener('click', () => setView(state.view === 'map' ? 'list' : 'map'));
 
 document.getElementById('comparison-close')?.addEventListener('click', () => {
   state.comparisonOpen = false;
@@ -2168,6 +2194,9 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
     await requestUserLocation();
   }
   await loadReports();
+
+  // set active bottom nav on load
+  try { setActiveNav(); } catch (e) {}
 
   if (isPage('prices')) {
     // Prices page: force grid layout (grid-only list presentation) and hide the list toggle.
