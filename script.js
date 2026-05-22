@@ -2114,9 +2114,86 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
     await requestUserLocation();
   }
   await loadReports();
+
   if (isPage('prices')) {
-    setView(state.view);
+    // Prices page: force grid layout (grid-only list presentation) and hide the list toggle.
+    setLayout('grid');
+    document.getElementById('list-btn')?.style.setProperty('display', 'none');
+    document.getElementById('grid-layout-btn')?.classList.add('active');
+
+    // If URL contains ?view=map, open map view immediately; otherwise show grid results.
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      if (params.get('view') === 'map') setView('map');
+      else setView('list');
+    } catch (e) {
+      setView('list');
+    }
   } else if (isPage('account')) {
     renderAccountSection();
   }
+
+  // Enable side-swipe navigation between main pages
+  try {
+    enableSideScroll();
+  } catch (e) { /* ignore */ }
 })();
+
+// Side-swipe navigation: supports touch, mouse drag, and arrow keys
+function enableSideScroll() {
+  const order = ['index.html', 'prices.html', 'report.html', 'account.html'];
+  const href = window.location.pathname.split('/').pop() || 'index.html';
+  const currentIndex = Math.max(0, order.indexOf(href));
+
+  function goToIndex(idx) {
+    if (idx < 0 || idx >= order.length || idx === currentIndex) return;
+    const target = order[idx];
+    const direction = idx > currentIndex ? 'left' : 'right';
+    document.body.classList.add('swipe-transition');
+    document.body.classList.add(direction === 'left' ? 'swipe-left' : 'swipe-right');
+    // navigate after animation
+    setTimeout(() => {
+      // remove classes to avoid affecting target page if navigated fast
+      window.location.href = target;
+    }, 320);
+  }
+
+  // touch handlers
+  let startX = 0, startY = 0, isTouch = false;
+  window.addEventListener('touchstart', e => {
+    if (!e.touches || e.touches.length !== 1) return;
+    isTouch = true;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, {passive:true});
+  window.addEventListener('touchend', e => {
+    if (!isTouch) return;
+    const endX = (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientX) || 0;
+    const endY = (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientY) || 0;
+    const dx = endX - startX;
+    const dy = endY - startY;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0) goToIndex(currentIndex + 1);
+      else goToIndex(currentIndex - 1);
+    }
+    isTouch = false;
+  });
+
+  // mouse drag for desktop
+  let mouseDown = false; let mouseStartX = 0;
+  window.addEventListener('mousedown', e => { mouseDown = true; mouseStartX = e.clientX; });
+  window.addEventListener('mouseup', e => {
+    if (!mouseDown) return; mouseDown = false;
+    const dx = e.clientX - mouseStartX;
+    if (Math.abs(dx) > 100) {
+      if (dx < 0) goToIndex(currentIndex + 1);
+      else goToIndex(currentIndex - 1);
+    }
+  });
+
+  // keyboard
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') goToIndex(currentIndex + 1);
+    if (e.key === 'ArrowLeft') goToIndex(currentIndex - 1);
+  });
+}

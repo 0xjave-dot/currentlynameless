@@ -399,6 +399,21 @@ header {
   border: 1px solid rgba(124,58,237,0.18);
 }
 
+/* Side-swipe page transition utility */
+body.swipe-transition {
+  transition: transform 320ms cubic-bezier(.22,.9,.32,1);
+  will-change: transform;
+  overflow-x: hidden;
+}
+
+body.swipe-left {
+  transform: translateX(-100%);
+}
+
+body.swipe-right {
+  transform: translateX(100%);
+}
+
 .btn-outline:hover {
   background: rgba(167,139,250,0.12);
 }
