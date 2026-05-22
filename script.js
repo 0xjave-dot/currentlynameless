@@ -1436,6 +1436,8 @@ function renderMap() {
   if (bounds.length > 0 && !state.nearMeActive) {
     try { map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 }); } catch {}
   }
+  // Ensure the loading skeleton is hidden after we've processed markers
+  try { setMapLoading(false); } catch (e) {}
 }
 
 // ── Vote handler ──────────────────────────────────────────────────
