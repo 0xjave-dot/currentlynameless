@@ -1437,8 +1437,6 @@ function setView(v) {
   document.getElementById('list-btn')?.classList.toggle('active', v === 'list');
   document.getElementById('map-btn')?.classList.toggle('active', v === 'map');
 
-  if (!listView && !mapView) return;
-
   if (v === 'map') {
     if (!map) renderMap();
     else {
