@@ -1081,11 +1081,11 @@ function renderList() {
         el.classList.toggle('highlight', e.target.open);
       });
     });
-    // If URL contains ?report=ID while on prices page, open that report
+    // If URL contains ?report=ID while on prices page, open that report modal
     try {
       const params = new URLSearchParams(window.location.search || '');
       const rid = params.get('report');
-      if (rid) setTimeout(() => openReportDetail(rid), 250);
+      if (rid) setTimeout(() => openListingModal(rid), 250);
     } catch (e) {}
     return;
   }
@@ -1284,7 +1284,7 @@ function gridCardHTML(r, idx = 0) {
         <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
           <button class="vote-btn upvote" data-report-id="${escHtml(r.id)}" data-vote-type="upvote">👍 ${escHtml(String(up || 0))}</button>
           <button class="vote-btn debunk" data-report-id="${escHtml(r.id)}" data-vote-type="debunk">👎 ${escHtml(String(down || 0))}</button>
-          <a class="btn btn-ghost btn-sm" href="prices.html?report=${encodeURIComponent(r.id)}">Open listing</a>
+          <button class="btn btn-ghost btn-sm" onclick="openListingModal('${escHtml(r.id)}')">Open listing</button>
         </div>
       </details>
     </article>`;
@@ -1377,7 +1377,7 @@ function renderMap() {
           <button class="btn btn-sm btn-danger" ${voteDisabled} title="${voteTitle}"
             onclick="handleVote('${r.id}','debunk')">👎 Debunk</button>
         </div>
-        <div style="margin-top:8px;text-align:right;"><a class="btn btn-ghost btn-sm" href="prices.html?report=${encodeURIComponent(r.id)}">Open listing</a></div>
+        <div style="margin-top:8px;text-align:right;"><button class="btn btn-ghost btn-sm" onclick="openListingModal('${escHtml(r.id)}')">Open listing</button></div>
       </div>
     `);
 
@@ -1676,6 +1676,88 @@ function renderCommentList(report) {
   }
 
   return rootComments.map(comment => createCommentHTML(comment, report.id, repliesByParent[comment.id] || [])).join('');
+}
+
+// ── Listing bottom-sheet modal ──────────────────────────────────
+function openListingModal(reportId) {
+  const report = (state.allReports || []).find(r => r.id === reportId) || (state.reports || []).find(r => r.id === reportId);
+  if (!report) {
+    toast('Listing not found.', 'error');
+    return;
+  }
+  const body = document.getElementById('listing-modal-body');
+  if (!body) return;
+  const up = report.upvoteCount ?? report.upvotes?.length ?? 0;
+  const down = report.debunkCount ?? report.debunks?.length ?? 0;
+  body.innerHTML = `
+    <div class="listing-top">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <h3 class="item-name">${escHtml(report.itemName || report.name)}</h3>
+          <div class="meta-sub">${escHtml(report.locationName || report.lga || report.state || '')} · ${timeAgo(report.timestamp)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="price-badge">${formatPrice(report.price)}${report.measurement ? `/${escHtml(report.measurement)}` : ''}</div>
+          <div style="margin-top:6px;color:var(--clay-muted);">${availLabel(report.availability)}</div>
+        </div>
+      </div>
+    </div>
+    <div class="listing-media" style="margin-top:12px;">
+      ${report.media && report.media.length ? report.media.map(m=>`<img src="${escHtml(m.url||m)}" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:8px;"/>`).join('') : '<div style="color:var(--gray-400);">No evidence uploaded.</div>'}
+    </div>
+    <div class="listing-actions" style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-outline" onclick="handleVote('${report.id}','upvote')">👍 ${escHtml(String(up))}</button>
+      <button class="btn btn-danger" onclick="handleVote('${report.id}','debunk')">👎 ${escHtml(String(down))}</button>
+      <div style="flex:1"></div>
+      <div style="color:var(--clay-muted);font-size:0.9rem;">${report.confidence !== null ? escHtml(String(report.confidence) + '% confidence') : 'No votes yet'}</div>
+    </div>
+    <div class="listing-poster" style="margin-top:12px;border-top:1px solid rgba(0,0,0,0.04);padding-top:12px;">
+      <div style="font-size:0.9rem;color:var(--clay-muted);">Posted by</div>
+      <div style="font-weight:700">${escHtml(report.userName || report.posterName || report.userEmail || 'Anonymous')}</div>
+    </div>
+    <div class="listing-comments" style="margin-top:14px;">
+      <h4 style="margin:0 0 8px 0;">Community notes</h4>
+      <div id="listing-comments-list">${renderCommentList(report)}</div>
+      <div style="margin-top:8px;">
+        <textarea id="listing-comment-input" placeholder="Write a comment..." style="width:100%;min-height:64px;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="btn btn-primary" onclick="submitListingComment('${report.id}')">Post comment</button></div>
+      </div>
+    </div>
+  `;
+
+  openModal('listing-modal');
+
+  // Wire reply toggles and reply submits inside modal
+  setTimeout(() => {
+    document.querySelectorAll('#listing-comments-list .reply-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rid = btn.dataset.reportId;
+        const cid = btn.dataset.commentId;
+        const form = document.getElementById(`reply-form-${rid}-${cid}`);
+        if (form) form.style.display = form.style.display === 'grid' ? 'none' : 'grid';
+      });
+    });
+    document.querySelectorAll('#listing-comments-list .reply-submit-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const rid = btn.dataset.reportId;
+        const cid = btn.dataset.commentId;
+        const input = document.getElementById(`reply-input-${rid}-${cid}`);
+        if (!input) return;
+        await saveReportComment(rid, input.value, cid);
+        openListingModal(rid);
+      });
+    });
+  }, 120);
+}
+
+async function submitListingComment(reportId) {
+  const input = document.getElementById('listing-comment-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  await saveReportComment(reportId, text);
+  // Refresh modal content
+  openListingModal(reportId);
 }
 
 function renderAccountSection() {
@@ -2335,11 +2417,6 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
   } else if (isPage('account')) {
     renderAccountSection();
   }
-
-  // Enable side-swipe navigation between main pages
-  try {
-    enableSideScroll();
-  } catch (e) { /* ignore */ }
 })();
 
 // Side-swipe navigation: supports touch, mouse drag, and arrow keys

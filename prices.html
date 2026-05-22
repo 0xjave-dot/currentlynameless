@@ -34,23 +34,12 @@
   </header>
 
   <main>
-    <div class="toolbar">
-      <div class="search-wrap">
-        <span class="search-icon" aria-hidden="true"></span>
-        <input id="search-input" type="search" aria-label="Search listings" placeholder="Search goods, markets, sellers, states..." />
-      </div>
-      <div class="toolbar-actions">
-        <div class="primary-actions">
-          <button class="btn btn-outline btn-sm" id="nearme-btn"><span>Near Me</span></button>
-          <button class="btn btn-outline btn-sm" id="nationwide-btn"><span>Nationwide</span></button>
-          <button class="btn btn-primary btn-sm" id="compare-btn"><span>Compare</span></button>
-          <button class="btn btn-primary btn-sm" id="report-btn" style="display:none;">+ Report Price</button>
-        </div>
-        <div class="layout-actions">
-          <button id="list-btn" class="active">List</button>
-          <button id="grid-layout-btn" title="Toggle grid layout">Grid</button>
-        </div>
-      </div>
+    <span class="search-icon" aria-hidden="true"></span>
+    <input id="search-input" type="search" aria-label="Search listings" placeholder="Search goods, markets, sellers, states..." />
+    <div class="primary-actions">
+      <button class="btn btn-outline btn-sm" id="nearme-btn"><span>Near Me</span></button>
+      <button class="btn btn-outline btn-sm" id="nationwide-btn"><span>Nationwide</span></button>
+      <button class="btn btn-primary btn-sm" id="compare-btn"><span>Compare</span></button>
     </div>
 
     <div class="category-bar" id="category-bar" role="tablist" aria-label="Categories">
@@ -431,6 +420,22 @@
           <button class="btn btn-ghost" data-close="report-modal">Cancel</button>
           <button class="btn btn-primary" id="report-submit">Submit Report</button>
         </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Listing bottom-sheet modal -->
+  <div class="modal-backdrop listing-backdrop" id="listing-modal" style="display:none;">
+    <div class="modal listing-modal bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="listing-title">
+      <div class="modal-header">
+        <div>
+          <h2 id="listing-title">Listing</h2>
+          <p class="auth-subtitle" id="listing-subtitle"></p>
+        </div>
+        <button class="modal-close" data-close="listing-modal" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="listing-modal-body">
+        <!-- Populated dynamically -->
       </div>
     </div>
   </div>
