@@ -607,21 +607,44 @@ main {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-  padding:8px 6px;
-  margin-bottom:12px;
+/* Category bar */
+.category-bar {
+  padding: 8px 6px;
+  margin-bottom: 12px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .category-chip {
-  border:1px solid rgba(124,58,237,0.12);
-  background:rgba(255,255,255,0.95);
-  padding:8px 12px;
-  border-radius:999px;
-  font-weight:700;
-  cursor:pointer;
+  border: 1px solid rgba(124,58,237,0.12);
+  background: rgba(255,255,255,0.95);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--clay-primary);
+  white-space: nowrap;
 }
 .category-chip.active {
-  background:linear-gradient(135deg,var(--clay-primary-light),var(--clay-primary));
-  color:#fff;
-  border-color:transparent;
+  background: linear-gradient(135deg, var(--clay-primary-light), var(--clay-primary));
+  color: #fff;
+  border-color: transparent;
+}
+
+/* Primary action buttons (Near Me / Nationwide / Compare) */
+.primary-actions .btn {
+  background: rgba(255,255,255,0.96);
+  color: var(--clay-primary);
+  border: 1px solid rgba(124,58,237,0.12);
+  box-shadow: none;
+}
+.primary-actions .btn.selected,
+.primary-actions .btn.active-nearme {
+  background: linear-gradient(135deg, var(--clay-primary-light), var(--clay-primary));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* Grid-only list view tweaks */

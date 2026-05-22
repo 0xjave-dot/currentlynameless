@@ -25,7 +25,7 @@ let state = {
   allReports: [],
   reports: [],
   view: 'list',
-  nearMeActive: false,
+  nearMeActive: true,
   comparisonOpen: false,
   comparisonItem: '',
   comparisonLocations: [],
@@ -179,7 +179,6 @@ function isPage(page) {
 }
 
 const CATEGORIES = ['All','Food','Groceries','Electronics','Fuel','Beverages','Household','Other'];
-    category: 'Groceries',
 
 function setActiveNav() {
   document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
@@ -815,8 +814,35 @@ function render() {
   setLayout(state.layout);
   // render category chips when present
   renderCategoryBar();
+  // update primary action button selection (Near Me / Nationwide / Compare)
+  try { updatePrimarySelection(); } catch (e) {}
   if (state.view === 'list') renderList();
   else renderMap();
+}
+
+function updatePrimarySelection() {
+  const nearBtn = document.getElementById('nearme-btn');
+  const nationBtn = document.getElementById('nationwide-btn');
+  const compareBtn = document.getElementById('compare-btn');
+
+  if (!nearBtn && !nationBtn && !compareBtn) return;
+
+  if (state.comparisonOpen) {
+    compareBtn?.classList.add('selected');
+    nearBtn?.classList.remove('selected');
+    nationBtn?.classList.remove('selected');
+    return;
+  }
+
+  if (state.nearMeActive) {
+    nearBtn?.classList.add('selected');
+    nationBtn?.classList.remove('selected');
+    compareBtn?.classList.remove('selected');
+  } else {
+    nationBtn?.classList.add('selected');
+    nearBtn?.classList.remove('selected');
+    compareBtn?.classList.remove('selected');
+  }
 }
 
 function renderReportAccess() {
@@ -2419,6 +2445,7 @@ document.getElementById('comparison-open-btn')?.addEventListener('click', () => 
 document.getElementById('compare-btn')?.addEventListener('click', () => {
   state.comparisonOpen = !state.comparisonOpen;
   renderComparisonPanel();
+  try { updatePrimarySelection(); } catch (e) {}
 });
 
 // ── Initial load ──────────────────────────────────────────────────
