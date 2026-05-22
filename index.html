@@ -23,46 +23,81 @@
   </div>
 
 <!-- ─── HEADER ──────────────────────────────────── -->
+<!-- status bar (visual only) -->
+<div class="status-bar" aria-hidden="true">
+  <div class="status-left">9:41</div>
+  <div class="status-right">📶 ▂▂ ▮🔋</div>
+</div>
+
 <header>
-  <div class="header-inner">
-    <div class="header-logo">
-      <img class="logo-mark" src="https://i.ibb.co/gMKj8gyc/IMG-20260520-122236-092.jpg" alt="Last Price logo" />
-      <div class="logo-copy">
-        <span class="logo-name">LAST</span>
-        <span class="logo-accent">PRICE</span>
-      </div>
-    </div>
+  <div class="header-inner header-compact">
+    <div class="wordmark">LAST PRICE</div>
     <div class="header-spacer"></div>
-    <div class="header-user" id="auth-area">
-      <!-- injected by JS -->
+    <div class="header-actions">
+      <button class="icon-btn" aria-label="Notifications" id="btn-bell">🔔</button>
+      <button class="icon-btn" aria-label="Settings" id="btn-gear">⚙️</button>
     </div>
   </div>
 </header>
 
-<section class="hero-section">
-  <div class="hero-copy">
-    <div class="hero-eyebrow">Nigeria price tracking</div>
-    <h1>Real‑time prices for everyday goods — crowdsourced by real Nigerians, verified by your neighbors.</h1>
-    <p>Find fuel, food, and grocery costs near you and across the country. Report prices, vote on trusted data, and help drive price stability.</p>
-    <div class="hero-actions">
-      <button class="btn btn-primary" id="hero-report-btn">Report a price</button>
-      <button class="btn btn-outline" id="hero-login-btn" style="display:none;">Sign in</button>
-    </div>
-    <div class="hero-metrics">
-      <div class="hero-metric"><strong>1.2K</strong><span>Verified reports</span></div>
-      <div class="hero-metric"><strong>8.4K</strong><span>Community votes</span></div>
-      <div class="hero-metric"><strong>24/7</strong><span>Local coverage</span></div>
-    </div>
+<main class="home-main mobile-home">
+  <div class="search-wrap search-main">
+    <span class="search-icon">🔍</span>
+    <input id="search-input" type="search" aria-label="Search" placeholder="Search" />
   </div>
-  <div class="hero-panel clay-card-soft">
-    <div class="hero-panel-inner">
-      <div class="hero-panel-title">Live highlights</div>
-      <div id="hero-highlights">
-        <div class="hero-panel-item"><span>No live data yet</span><strong>Enable location to surface local price highlights.</strong></div>
+
+  <div class="promo-card" id="promo-card">
+    <div class="promo-left">
+      <div class="promo-illustration">🛍️</div>
+      <div>
+        <div class="promo-title">Weekly savings nearby</div>
+        <div class="promo-desc">Discover fresh deals and community-verified prices.</div>
       </div>
     </div>
+    <button class="promo-dismiss" id="promo-dismiss" aria-label="Dismiss">×</button>
   </div>
-</section>
+
+  <div class="feature-row" role="list">
+    <div class="feature-item" role="listitem">
+      <button class="feature-btn">🍌</button>
+      <div class="feature-label">Foodstuffs</div>
+    </div>
+    <div class="feature-item" role="listitem">
+      <button class="feature-btn">🧺</button>
+      <div class="feature-label">Groceries</div>
+    </div>
+    <div class="feature-item" role="listitem">
+      <button class="feature-btn">💡</button>
+      <div class="feature-label">Utilities</div>
+    </div>
+    <div class="feature-item" role="listitem">
+      <button class="feature-btn">⛽</button>
+      <div class="feature-label">Fuel</div>
+    </div>
+    <div class="feature-item" role="listitem">
+      <button class="feature-btn">🛠️</button>
+      <div class="feature-label">Services</div>
+    </div>
+  </div>
+
+  <div class="ad-card">
+    <div class="ad-left">
+      <div class="ad-logo">BRAND</div>
+      <div class="ad-headline">Special offer on essentials</div>
+      <div class="ad-sub">Save more when you buy in bulk. Limited time.</div>
+      <a class="ad-cta" href="#">Learn more →</a>
+    </div>
+    <div class="ad-right">
+      <img src="https://images.unsplash.com/photo-1542831371-d531d36971e6?w=800&q=60" alt="Product" />
+    </div>
+    <div class="ad-pill">Ad</div>
+  </div>
+
+  <!-- existing listing area injected by script.js -->
+  <div id="list-view">
+    <div class="spinner-wrap"><div class="spinner"></div></div>
+  </div>
+</main>
 
 <!-- ─── MAIN ─────────────────────────────────────── -->
 <main>
@@ -143,6 +178,19 @@
 
 <!-- ─── TOAST CONTAINER ───────────────────────────── -->
 <div id="toast-container"></div>
+
+<script>
+  // Promo dismiss interaction
+  (function(){
+    const btn = document.getElementById('promo-dismiss');
+    const card = document.getElementById('promo-card');
+    if (!btn || !card) return;
+    btn.addEventListener('click', () => {
+      card.classList.add('dismissed');
+      setTimeout(() => { try { card.remove(); } catch(e){} }, 350);
+    });
+  })();
+</script>
 
 <!-- ─── MODAL: LOGIN ──────────────────────────────── -->
 <div class="modal-backdrop" id="login-modal" style="display:none;">
