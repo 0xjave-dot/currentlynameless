@@ -1188,12 +1188,27 @@ main {
 /* Grid layout for desktop/tablet */
 #list-view.layout-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 18px;
   align-items: start;
 }
 
 #list-view.layout-grid .report-card { margin: 0; }
+
+/* Mobile-first 2-column grid for compact cards */
+@media (max-width: 480px) {
+  #list-view.layout-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .report-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .report-card .item-name { font-size: 0.95rem; font-weight: 700; }
+  .price-badge { font-size: 0.95rem; }
+  .vote-row { gap: 6px; }
+}
 
 .report-meta {
   display: flex;
@@ -1226,6 +1241,23 @@ main {
   background: rgba(220,38,38,0.12);
   color: #b91c1c;
 }
+
+/* Trend badges for grid cards */
+.trend-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  background: rgba(124,58,237,0.06);
+  color: var(--clay-primary);
+}
+.trend-up { background: rgba(16,185,129,0.12); color: #059669; }
+.trend-down { background: rgba(254,226,226,0.9); color: #b91c1c; }
+
+.report-card.grid-card { display:flex; flex-direction:column; justify-content:space-between; }
+.report-card.grid-card .price-badge { font-weight:900; color:var(--clay-primary); }
 
 .meta-dot {
   color: rgba(51,47,58,0.18);

@@ -981,9 +981,23 @@ function renderList() {
     return;
   }
 
+  // If we're in grid layout (prices page), render compact grid cards
+  if (state.layout === 'grid' || isPage('prices')) {
+    container.innerHTML = reportsWithDistance.map((r, idx) => gridCardHTML(r, idx)).join('');
+
+    // Attach vote listeners on compact cards
+    container.querySelectorAll('.vote-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const { reportId, voteType } = btn.dataset;
+        handleVote(reportId, voteType);
+      });
+    });
+    return;
+  }
+
   container.innerHTML = reportsWithDistance.map((r, idx) => reportCardHTML(r, idx === 0 && state.nearMeActive)).join('');
 
-  // Attach vote listeners
+  // Attach vote listeners for list cards
   container.querySelectorAll('.vote-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const { reportId, voteType } = btn.dataset;
@@ -1109,6 +1123,46 @@ function reportCardHTML(r, isNearest = false) {
         ${confBar}
       </div>
     </div>`;
+}
+
+function gridCardHTML(r, idx = 0) {
+  const trend = r.trend || r.trendPercent || (r.trendDelta ? String(r.trendDelta) : null) || null;
+  const trendVal = trend ? String(trend).trim() : null;
+  let trendHtml = '';
+  if (trendVal) {
+    if (trendVal.startsWith('-')) {
+      trendHtml = `<span class="trend-badge trend-down">⬇ ${escHtml(trendVal.replace('-', ''))}</span>`;
+    } else if (trendVal.startsWith('+')) {
+      trendHtml = `<span class="trend-badge trend-up">⬆ ${escHtml(trendVal.replace('+', ''))}</span>`;
+    } else {
+      trendHtml = `<span class="trend-badge">${escHtml(trendVal)}</span>`;
+    }
+  }
+
+  const statusClass = `avail-${(r.availability || r.status || '').toString().toLowerCase().replace(/\s+/g, '_')}`;
+  const statusLabel = availLabel(r.availability || r.status);
+  const location = (r.locationName || r.location || '').trim();
+  const up = r.upvoteCount ?? r.upvotes ?? r.upvotes?.length ?? 0;
+  const down = r.debunkCount ?? r.downvotes ?? r.downvotes?.length ?? 0;
+
+  return `
+    <article class="report-card grid-card" data-idx="${idx}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+        <div class="item-name">${escHtml(r.itemName || r.name)}</div>
+        <div style="text-align:right;">
+          <div class="price-badge">${formatPrice(r.price || r.priceValue || r.amount)}${r.measurement ? `/${escHtml(r.measurement)}` : ''}</div>
+          ${trendHtml}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+        <span class="avail-badge ${escHtml(statusClass)}">${escHtml(statusLabel)}</span>
+        <span class="meta-location">${escHtml(location)}</span>
+      </div>
+      <div class="vote-row" style="margin-top:6px;">
+        <button class="vote-btn upvote" data-report-id="${escHtml(r.id || r._id || r.name)}" data-vote-type="upvote">👍 ${escHtml(String(up || 0))}</button>
+        <button class="vote-btn debunk" data-report-id="${escHtml(r.id || r._id || r.name)}" data-vote-type="debunk">👎 ${escHtml(String(down || 0))}</button>
+      </div>
+    </article>`;
 }
 
 function escHtml(str) {
