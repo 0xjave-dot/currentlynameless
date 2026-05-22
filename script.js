@@ -257,7 +257,10 @@ function applyReportFilters(reports) {
     });
   }
   if (state.nearMeActive && hasUserLocation()) {
-    filtered = filtered.filter(r => haversine(state.userLat, state.userLng, r.lat, r.lng) <= 5);
+    const nearby = filtered.filter(r => haversine(state.userLat, state.userLng, r.lat, r.lng) <= 5);
+    if (nearby.length > 0) {
+      filtered = nearby;
+    }
   }
   // Category filter
   if (state.category && state.category !== 'All') {
@@ -870,7 +873,13 @@ async function loadReports() {
     state.reports = applyReportFilters(state.allReports);
     render();
   } catch (err) {
-    toast('Failed to load reports: ' + err.message, 'error');
+    console.warn('Failed to load reports:', err);
+    // Fallback to demo reports so the page shows product listings even without API
+    const demoEnriched = DEMO_REPORTS.map(d => enrichReport({ ...d, media: d.media || (d.imageUrl ? [d.imageUrl] : []) }));
+    state.allReports = demoEnriched;
+    state.reports = applyReportFilters(state.allReports);
+    render();
+    toast('Failed to load reports from server — showing demo listings.', 'info');
   }
 }
 
