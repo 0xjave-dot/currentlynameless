@@ -521,10 +521,17 @@ main {
   gap:12px;
   width:100%;
 }
-.toolbar-actions .primary-actions {
+.toolbar-actions .primary-actions,
+.primary-actions {
   display:flex;
-  gap:8px;
+  gap:10px;
   flex-wrap:wrap;
+  width:100%;
+  justify-content:space-between;
+}
+.primary-actions .btn {
+  flex:1 1 160px;
+  min-width: 140px;
 }
 .toolbar-actions .layout-actions {
   display:flex;

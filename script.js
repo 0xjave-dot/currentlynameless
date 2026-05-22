@@ -1073,12 +1073,18 @@ function renderList() {
         handleVote(reportId, voteType);
       });
     });
-    // Attach detail toggle to allow deep-link highlighting
+    // Attach detail toggle to allow deep-link highlighting and auto-close open items
     container.querySelectorAll('details.grid-details').forEach(d => {
       d.addEventListener('toggle', e => {
-        const el = e.target.closest('.report-card');
+        const opened = e.target;
+        if (opened.open) {
+          container.querySelectorAll('details.grid-details').forEach(other => {
+            if (other !== opened) other.open = false;
+          });
+        }
+        const el = opened.closest('.report-card');
         if (!el) return;
-        el.classList.toggle('highlight', e.target.open);
+        el.classList.toggle('highlight', opened.open);
       });
     });
     // If URL contains ?report=ID while on prices page, open that report modal
