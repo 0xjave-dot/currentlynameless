@@ -65,11 +65,49 @@
 </section>
 
 <!-- ─── MAIN ─────────────────────────────────────── -->
-<main class="home-main">
-  <section class="home-intro clay-card-soft">
-   
-   
+<main>
+  <div class="search-wrap">
+    <span class="search-icon" aria-hidden="true"></span>
+    <input id="search-input" type="search" aria-label="Search listings" placeholder="Search goods, markets, sellers, states..." />
+  </div>
+  <div class="primary-actions">
+    <button class="btn btn-outline btn-sm selected" id="nearme-btn"><span>Near Me</span></button>
+    <button class="btn btn-outline btn-sm" id="nationwide-btn"><span>Nationwide</span></button>
+    <button class="btn btn-outline btn-sm" id="compare-btn"><span>Compare</span></button>
+  </div>
+
+  <div class="category-bar" id="category-bar" role="tablist" aria-label="Categories"></div>
+
+  <div class="report-count" id="report-count"></div>
+  <div class="nearby-status" id="nearby-status"></div>
+
+  <section id="comparison-section" class="comparison-panel clay-card-soft" style="display:none;">
+    <div class="comparison-header">
+      <div>
+        <p class="comparison-label">Location price comparison</p>
+        <h3 id="comparison-title">Compare prices across Nigeria</h3>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="comparison-close" type="button">Close</button>
+    </div>
+    <div class="comparison-controls">
+      <div class="form-group">
+        <label for="compare-item-input">Item to compare</label>
+        <input type="search" id="compare-item-input" placeholder="Use current search or type an item" />
+      </div>
+      <div class="form-group">
+        <label for="compare-location-select">Add a location</label>
+        <select id="compare-location-select">
+          <option value="">Select from available locations</option>
+        </select>
+      </div>
+    </div>
+    <div class="comparison-selected" id="comparison-selected"></div>
+    <div class="comparison-grid" id="comparison-grid"></div>
   </section>
+
+  <div id="list-view">
+    <div class="spinner-wrap"><div class="spinner"></div></div>
+  </div>
 </main>
 
 <!-- ─── BOTTOM NAV (MOBILE) ───────────────────────── -->
@@ -80,18 +118,12 @@
     </svg>
     <span class="nav-label">Home</span>
   </a>
-  <a class="bottom-nav-item" id="nav-prices" href="prices.html" aria-label="Prices">
+  <a class="bottom-nav-item" id="nav-shop" href="shop.html" aria-label="Shop">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-      <path d="M6 4h11a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-4l-4 4H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path>
-      <path d="M16 16h2a1 1 0 0 1 1 1v2"></path>
+      <path d="M6 7V5a4 4 0 0 1 8 0v2h3a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a1 1 0 0 1 1-1h2z"></path>
+      <path d="M9 7a3 3 0 0 1 6 0"></path>
     </svg>
-    <span class="nav-label">Prices</span>
-  </a>
-  <a class="bottom-nav-item" id="nav-map" href="map.html" aria-label="Map">
-    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-      <path d="M3 6l7-2 7 2 4-1v13l-7 2-7-2-4 1V6z"></path>
-    </svg>
-    <span class="nav-label">Map</span>
+    <span class="nav-label">Shop</span>
   </a>
   <a class="bottom-nav-item" id="nav-report" href="report.html" aria-label="Report">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">

@@ -187,11 +187,8 @@ function setActiveNav() {
   const path = window.location.pathname.split('/').pop() || 'index.html';
   const params = new URLSearchParams(window.location.search || '');
   if (path === '' || path === 'index.html') document.getElementById('nav-home')?.classList.add('active');
-  else if (path === 'prices.html') {
-    if (params.get('view') === 'map') document.getElementById('nav-map')?.classList.add('active');
-    else document.getElementById('nav-prices')?.classList.add('active');
-  } else if (path === 'map.html') {
-    document.getElementById('nav-map')?.classList.add('active');
+  else if (path === 'shop.html') {
+    document.getElementById('nav-shop')?.classList.add('active');
   } else if (path === 'report.html') document.getElementById('nav-report')?.classList.add('active');
   else if (path === 'account.html') document.getElementById('nav-account')?.classList.add('active');
 }
@@ -1276,7 +1273,7 @@ function renderList() {
   }
 
   // If we're in grid layout (prices page), render compact grid cards
-  if (state.layout === 'grid' || isPage('prices')) {
+  if (state.layout === 'grid' || isPage('home')) {
     container.innerHTML = reportsWithDistance.map((r, idx) => gridCardHTML(r, idx)).join('');
 
     // Attach vote listeners on compact cards
@@ -2645,7 +2642,7 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
     if (!valid) toast('Session expired. Please sign in again.', 'info');
   }
   renderAuthArea();
-  if (isPage('home') || isPage('prices') || isPage('map') || isPage('shop')) {
+  if (isPage('home') || isPage('shop')) {
     try { await requestUserLocation(); } catch (e) {}
   }
   await loadReports();
@@ -2653,12 +2650,12 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
   // set active bottom nav on load
   try { setActiveNav(); } catch (e) {}
 
-  if (isPage('prices')) {
-    // Prices page: force grid layout (grid-only list presentation) and hide the list toggle.
+  if (isPage('home')) {
+    // Prices-style homepage: force grid layout (grid-only list presentation) and hide the list toggle.
     setLayout('grid');
     document.getElementById('list-btn')?.style.setProperty('display', 'none');
     document.getElementById('grid-layout-btn')?.classList.add('active');
-    // Prices page: always show list/grid view (map is on the dedicated map page)
+    // Prices page: always show list/grid view (map is on the dedicated shop page)
     setView('list');
   } else if (isPage('shop')) {
     // Shop page: ensure the user location is loaded for nearby sorting and render the shop planner.
@@ -2671,7 +2668,7 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
 
 // Side-swipe navigation: supports touch, mouse drag, and arrow keys
 function enableSideScroll() {
-  const order = ['index.html', 'prices.html', 'report.html', 'account.html'];
+  const order = ['index.html', 'shop.html', 'report.html', 'account.html'];
   const href = window.location.pathname.split('/').pop() || 'index.html';
   const currentIndex = Math.max(0, order.indexOf(href));
 
