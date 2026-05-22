@@ -288,10 +288,12 @@ header {
 .section-head { font-size:16px; font-weight:800; margin-top:18px; margin-bottom:10px; }
 
 /* Search (main) */
-.search-main { display:flex; gap:12px; align-items:center; padding: 12px; background: rgba(255,255,255,0.96); border-radius: 999px; box-shadow: none; border: 1px solid rgba(124,58,237,0.06); }
-.search-main .search-icon { margin-left: 6px; font-size: 16px; color: var(--clay-muted); }
-.search-main input { border: none; outline: none; background: transparent; width: 100%; padding: 6px 8px; font-size: 14px; }
-.search-main input:focus { box-shadow: 0 8px 20px rgba(124,58,237,0.08); transform: translateY(-1px); }
+.mobile-home { position: relative; }
+.search-main { display: block; width: 100%; min-height: 48px; padding: 14px 16px 14px 52px; background: rgba(255,255,255,0.96); border-radius: 999px; border: 1px solid rgba(124,58,237,0.06); box-shadow: none; color: var(--clay-foreground); font-size: 14px; }
+.search-icon { position: absolute; left: 28px; top: 28px; width: 20px; height: 20px; color: var(--clay-muted); }
+.search-main { box-sizing: border-box; }
+.search-main:focus { outline: none; box-shadow: 0 8px 20px rgba(124,58,237,0.08); transform: translateY(-1px); }
+.search-main::placeholder { color: var(--clay-muted); }
 
 /* Promo card */
 .promo-card { position: relative; display:flex; align-items:center; justify-content:space-between; gap:12px; padding: 14px; border-radius: 16px; background: rgba(255,255,255,0.96); border: 1px solid rgba(124,58,237,0.06); margin-top: 12px; }
