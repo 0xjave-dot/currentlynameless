@@ -24,7 +24,7 @@ Open `http://localhost:3000` in your browser.
 - **Upvote / Debunk** — Community voting with confidence scores
 - **Search** — Case-insensitive item search
 - **Near Me** — Filter reports within 5 km of your location
-- **Map View** — Leaflet.js map with color-coded availability markers
+- **Shop Planner** — Compare nearby prices, build a shopping list, and plan your route
 - **List View** — Sorted by newest, with vote counts
 
 ---

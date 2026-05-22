@@ -32,6 +32,8 @@ let state = {
   userLat: null,
   userLng: null,
   searchQuery: '',
+  shopSearchQuery: '',
+  shoppingList: [],
   category: 'All',
   layout: 'list', // 'list' or 'grid' for desktop/tablet
 };
@@ -280,6 +282,190 @@ function renderCategoryBar() {
       state.reports = applyReportFilters(state.allReports);
       render();
     });
+  });
+}
+
+function loadShoppingList() {
+  try {
+    state.shoppingList = JSON.parse(localStorage.getItem('lp_shopping_list') || '[]') || [];
+  } catch (e) {
+    state.shoppingList = [];
+  }
+}
+
+function saveShoppingList() {
+  try {
+    localStorage.setItem('lp_shopping_list', JSON.stringify(state.shoppingList));
+  } catch (e) {
+    console.warn('Could not save shopping list', e);
+  }
+}
+
+function getShopResults() {
+  const query = state.shopSearchQuery.trim().toLowerCase();
+  let results = state.allReports.filter(report => {
+    if (!query) return true;
+    return [report.itemName, report.locationName, report.sellerPlace, report.state, report.lga]
+      .filter(Boolean)
+      .some(value => value.toLowerCase().includes(query));
+  });
+
+  if (state.nearMeActive && hasUserLocation()) {
+    results = results.filter(report => haversine(state.userLat, state.userLng, report.lat, report.lng) <= 5);
+  }
+
+  return results.sort((a, b) => {
+    if (state.nearMeActive && hasUserLocation()) {
+      const distanceA = haversine(state.userLat, state.userLng, a.lat, a.lng);
+      const distanceB = haversine(state.userLat, state.userLng, b.lat, b.lng);
+      if (distanceA !== distanceB) return distanceA - distanceB;
+    }
+    if (a.price !== b.price) return a.price - b.price;
+    return a.itemName.localeCompare(b.itemName);
+  }).slice(0, 14);
+}
+
+function renderShoppingTour() {
+  const tourEl = document.getElementById('shopping-tour');
+  if (!tourEl) return;
+  if (!state.shoppingList.length) {
+    tourEl.innerHTML = '<p style="margin:0;color:var(--gray-500);">Add items to your shopping list to curate a route.</p>';
+    return;
+  }
+
+  const items = state.shoppingList
+    .map(id => state.allReports.find(report => report.id === id))
+    .filter(Boolean);
+
+  if (!items.length) {
+    tourEl.innerHTML = '<p style="margin:0;color:var(--gray-500);">Your list is empty or contains unavailable items.</p>';
+    return;
+  }
+
+  const grouped = items.reduce((acc, item) => {
+    const location = item.locationName || item.lga || item.state || 'Unknown location';
+    if (!acc[location]) acc[location] = [];
+    acc[location].push(item);
+    return acc;
+  }, {});
+
+  const order = Object.keys(grouped).map(location => {
+    const points = grouped[location];
+    const distance = hasUserLocation()
+      ? haversine(state.userLat, state.userLng, points[0].lat, points[0].lng)
+      : 0;
+    return { location, points, distance };
+  }).sort((a, b) => a.distance - b.distance);
+
+  tourEl.innerHTML = order.map(entry => {
+    const itemNames = entry.points.map(item => escHtml(item.itemName)).join(', ');
+    const distanceLabel = hasUserLocation() ? ` · ${entry.distance.toFixed(1)} km` : '';
+    return `<div class="tour-stop"><strong>${escHtml(entry.location)}</strong><div class="tour-items">${itemNames}</div><div class="tour-distance">${distanceLabel}</div></div>`;
+  }).join('');
+}
+
+function renderShoppingList() {
+  const listEl = document.getElementById('shopping-list');
+  const summaryEl = document.getElementById('shopping-summary');
+  if (!listEl || !summaryEl) return;
+
+  if (!state.shoppingList.length) {
+    listEl.innerHTML = '<p style="margin:0;color:var(--gray-500);">Your shopping list is empty. Add deals from the list above.</p>';
+    summaryEl.innerHTML = '';
+    return;
+  }
+
+  const listItems = state.shoppingList
+    .map(id => state.allReports.find(report => report.id === id))
+    .filter(Boolean);
+
+  listEl.innerHTML = listItems.map(item => `
+    <div class="shopping-list-item">
+      <div>
+        <strong>${escHtml(item.itemName)}</strong>
+        <p>${escHtml(item.locationName || item.lga || item.state || item.sellerPlace)}</p>
+      </div>
+      <div class="shopping-list-actions">
+        <span class="shop-price">${formatPrice(item.price)}</span>
+        <button class="btn btn-sm btn-outline" type="button" onclick="removeFromShoppingList('${item.id}')">Remove</button>
+      </div>
+    </div>
+  `).join('');
+
+  const total = listItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
+  summaryEl.innerHTML = `<div class="shopping-summary-row"><strong>Total</strong><strong>${formatPrice(total)}</strong></div>`;
+}
+
+function updateShopInterface() {
+  const label = document.getElementById('shop-location-label');
+  const nearbyToggle = document.getElementById('shop-nearby-toggle');
+  if (label) {
+    label.textContent = state.nearMeActive && hasUserLocation()
+      ? 'Showing prices closest to you'
+      : 'Showing best prices available';
+  }
+  nearbyToggle?.classList.toggle('selected', state.nearMeActive);
+}
+
+function addToShoppingList(reportId) {
+  if (!state.shoppingList.includes(reportId)) {
+    state.shoppingList.push(reportId);
+    saveShoppingList();
+    render();
+  }
+}
+
+function removeFromShoppingList(reportId) {
+  state.shoppingList = state.shoppingList.filter(id => id !== reportId);
+  saveShoppingList();
+  render();
+}
+
+function renderShopPage() {
+  const dealsEl = document.getElementById('shop-deals');
+  if (!dealsEl) return;
+
+  const deals = getShopResults();
+  if (!deals.length) {
+    dealsEl.innerHTML = '<div class="empty-state"><p class="empty-icon">🛒</p><h3>No deals found</h3><p>Try broadening your search or turning off the nearby filter.</p></div>';
+  } else {
+    dealsEl.innerHTML = deals.map(report => {
+      const distance = hasUserLocation()
+        ? `${haversine(state.userLat, state.userLng, report.lat, report.lng).toFixed(1)} km`
+        : '';
+      return `
+        <div class="shop-item-card">
+          <div class="shop-item-copy">
+            <strong>${escHtml(report.itemName)}</strong>
+            <p>${escHtml(report.sellerPlace || report.locationName || report.lga || report.state)}</p>
+            <div class="shop-item-meta">${escHtml(report.locationName || report.lga || report.state)}${distance ? ` · ${distance}` : ''}</div>
+          </div>
+          <div class="shop-item-actions">
+            <span class="shop-price">${formatPrice(report.price)}</span>
+            <button class="btn btn-sm btn-outline" type="button" onclick="addToShoppingList('${report.id}')">Add</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderShoppingList();
+  renderShoppingTour();
+  updateShopInterface();
+}
+
+function setupShopPage() {
+  loadShoppingList();
+  document.getElementById('shop-search-input')?.addEventListener('input', e => {
+    state.shopSearchQuery = e.target.value.trim();
+    render();
+  });
+  document.getElementById('shop-nearby-toggle')?.addEventListener('click', () => {
+    state.nearMeActive = !state.nearMeActive;
+    if (state.nearMeActive && hasUserLocation()) {
+      state.reports = applyReportFilters(state.allReports);
+    }
+    render();
   });
 }
 
@@ -816,7 +1002,8 @@ function render() {
   renderCategoryBar();
   // update primary action button selection (Near Me / Nationwide / Compare)
   try { updatePrimarySelection(); } catch (e) {}
-  if (state.view === 'list') renderList();
+  if (isPage('shop')) renderShopPage();
+  else if (state.view === 'list') renderList();
   else renderMap();
 }
 
@@ -2458,7 +2645,7 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
     if (!valid) toast('Session expired. Please sign in again.', 'info');
   }
   renderAuthArea();
-  if (isPage('home') || isPage('prices') || isPage('map')) {
+  if (isPage('home') || isPage('prices') || isPage('map') || isPage('shop')) {
     try { await requestUserLocation(); } catch (e) {}
   }
   await loadReports();
@@ -2473,12 +2660,10 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
     document.getElementById('grid-layout-btn')?.classList.add('active');
     // Prices page: always show list/grid view (map is on the dedicated map page)
     setView('list');
-  } else if (isPage('map')) {
-    // If we're on the dedicated map page, attempt to center on the user's location then open the map view
-    try {
-      await requestUserLocation();
-    } catch (e) {}
-    setView('map');
+  } else if (isPage('shop')) {
+    // Shop page: ensure the user location is loaded for nearby sorting and render the shop planner.
+    loadShoppingList();
+    setupShopPage();
   } else if (isPage('account')) {
     renderAccountSection();
   }
