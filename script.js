@@ -2137,8 +2137,8 @@ function openModal(id) {
   if (id === 'profile-modal') populateProfileForm();
   const el = document.getElementById(id);
   if (!el) return;
-  // For listing bottom-sheet, add show class to animate slide-up
-  if (id === 'listing-modal') {
+  // For listing and product detail bottom-sheets, add show class to animate slide-up
+  if (id === 'listing-modal' || id === 'product-detail-modal') {
     el.style.display = 'flex';
     // allow a frame for CSS to pick up
     requestAnimationFrame(() => el.classList.add('show'));
@@ -2151,7 +2151,7 @@ function openModal(id) {
 function closeModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (id === 'listing-modal') {
+  if (id === 'listing-modal' || id === 'product-detail-modal') {
     el.classList.remove('show');
     // wait for animation to finish before hiding
     setTimeout(() => { el.style.display = 'none'; }, 300);
@@ -2321,6 +2321,61 @@ async function submitListingComment(reportId) {
   await saveReportComment(reportId, text);
   // Refresh modal content
   openListingModal(reportId);
+}
+
+function openProductDetailModal(productId) {
+  const products = {
+    'wheat-flour': { name: 'Wheat Flour (2.5kg)', price: 1850, trend: '+3%', availability: 'in_stock', seller: 'Zaria Grain Mills', location: 'Katsina, Katsina', upvotes: 95, downvotes: 5 },
+    'palm-wine': { name: 'Palm Wine (per calabash)', price: 800, trend: '-2%', availability: 'limited', seller: 'Calabar Premium Beverages', location: 'Calabar, Cross River', upvotes: 58, downvotes: 12 },
+  };
+  
+  const product = products[productId];
+  if (!product) return;
+  
+  const body = document.getElementById('product-detail-body');
+  if (!body) return;
+  
+  const availClass = product.availability === 'in_stock' ? 'in-stock' : product.availability === 'limited' ? 'limited' : 'out';
+  const availText = product.availability === 'in_stock' ? '✅ In Stock' : product.availability === 'limited' ? '⚠️ Limited' : '❌ Out of Stock';
+  const trendClass = product.trend.startsWith('+') ? 'trend-up' : 'trend-down';
+  const trendIcon = product.trend.startsWith('+') ? '📈' : '📉';
+  
+  body.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:14px;">
+      <div style="flex:1;">
+        <h3 class="product-name">${escHtml(product.name)}</h3>
+        <p class="product-meta">${trendIcon} Trend: ${escHtml(product.trend)}</p>
+      </div>
+      <div style="text-align:right;">
+        <div class="product-price-large">${formatPrice(product.price)}</div>
+      </div>
+    </div>
+    <div class="product-availability ${availClass}">
+      <span style="flex:1;">${availText}</span>
+    </div>
+    <div class="product-detail-stats">
+      <div class="product-detail-stat">
+        <div class="product-detail-stat-value">${product.upvotes}</div>
+        <div class="product-detail-stat-label">Upvotes</div>
+      </div>
+      <div class="product-detail-stat">
+        <div class="product-detail-stat-value">${product.downvotes}</div>
+        <div class="product-detail-stat-label">Debunks</div>
+      </div>
+    </div>
+    <div class="product-seller-info">
+      <span class="product-seller-label">Seller/Store</span>
+      <div class="product-seller-value">${escHtml(product.seller)}</div>
+      <span class="product-seller-label" style="margin-top:8px;">Exact location</span>
+      <div class="product-seller-value">${escHtml(product.location)}</div>
+    </div>
+    <div class="product-detail-actions">
+      <button class="btn btn-primary" type="button" onclick="addToShoppingList('${escHtml(productId)}'); toast('Added to cart', 'success');\">Add to cart</button>
+      <button class="btn btn-outline" type="button" onclick="closeModal('product-detail-modal')\">Close</button>
+    </div>
+  `;
+  
+  openModal('product-detail-modal');
 }
 
 function renderAccountSection() {
