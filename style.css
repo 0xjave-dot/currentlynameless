@@ -83,9 +83,15 @@ header {
   right: 0;
   z-index: 200;
   padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .header-inner {
+  /* legacy wrapper removed from markup; keep class for backward compatibility if needed */
   max-width: 1200px;
   margin: 0 auto;
   padding: 12px 18px;
@@ -265,19 +271,19 @@ header {
 
 .header-actions { display:flex; gap:10px; align-items:center; }
 .icon-btn {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: 999px;
   display: inline-grid;
   place-items: center;
   background: rgba(250,249,255,0.9);
   border: 1px solid rgba(124,58,237,0.06);
   cursor: pointer;
-  font-size: 20px;
+  font-size: 22px;
 }
 .icon-btn:active { transform: scale(0.96); }
 
-.icon-img { width:24px; height:24px; display:inline-block; }
+.icon-img { width:28px; height:28px; display:inline-block; }
 
 .section-head { font-size:16px; font-weight:800; margin-top:18px; margin-bottom:10px; }
 
@@ -317,7 +323,7 @@ header {
 /* Mobile main spacing */
 .mobile-home { padding: 18px 20px 120px; }
 
-.wordmark-img { height:44px; width:auto; display:block; }
+.wordmark-img { height:64px; width:auto; display:block; }
 
 
 
