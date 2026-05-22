@@ -2634,6 +2634,25 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
   try { updatePrimarySelection(); } catch (e) {}
 });
 
+// Promo dismiss — centralized handler (moved from inline)
+(function(){
+  const card = document.getElementById('promo-card');
+  const btn = document.getElementById('promo-dismiss');
+  if (!card) return;
+  try {
+    if (localStorage.getItem('lp_promo_dismissed') === '1') {
+      card.style.display = 'none';
+      return;
+    }
+  } catch (e) {}
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    card.classList.add('dismissed');
+    try { localStorage.setItem('lp_promo_dismissed', '1'); } catch(e) {}
+    setTimeout(() => { try { card.remove(); } catch(e){} }, 350);
+  });
+})();
+
 // ── Initial load ──────────────────────────────────────────────────
 (async () => {
   await initFirebase();

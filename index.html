@@ -46,13 +46,13 @@
 
 <main class="home-main mobile-home">
   <div class="search-wrap search-main">
-    <span class="search-icon">🔍</span>
+    <img class="icon-img search-icon" src="https://hugeicons.com/icons/search.svg" alt="Search" />
     <input id="search-input" type="search" aria-label="Search" placeholder="Search" />
   </div>
 
   <div class="promo-card" id="promo-card">
     <div class="promo-left">
-      <div class="promo-illustration">🛍️</div>
+      <div class="promo-illustration"><img class="icon-img" src="https://hugeicons.com/icons/shopping-bag.svg" alt="Weekly" /></div>
       <div>
         <div class="promo-title">Weekly savings nearby</div>
         <div class="promo-desc">Discover fresh deals and community-verified prices.</div>
@@ -140,18 +140,7 @@
 <!-- ─── TOAST CONTAINER ───────────────────────────── -->
 <div id="toast-container"></div>
 
-<script>
-  // Promo dismiss interaction
-  (function(){
-    const btn = document.getElementById('promo-dismiss');
-    const card = document.getElementById('promo-card');
-    if (!btn || !card) return;
-    btn.addEventListener('click', () => {
-      card.classList.add('dismissed');
-      setTimeout(() => { try { card.remove(); } catch(e){} }, 350);
-    });
-  })();
-</script>
+<!-- promo dismiss handled in script.js -->
 
 <!-- ─── MODAL: LOGIN ──────────────────────────────── -->
 <div class="modal-backdrop" id="login-modal" style="display:none;">
