@@ -1304,8 +1304,17 @@ function escHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+function setMapLoading(loading) {
+  const loader = document.getElementById('map-skeleton');
+  if (!loader) return;
+  loader.classList.toggle('hidden', !loading);
+}
+
 // ── Map ───────────────────────────────────────────────────────────
 function renderMap() {
+  const mapContainer = document.getElementById('map');
+  if (!mapContainer) return;
+  setMapLoading(true);
   if (!map) {
     const initialCenter = state.userLat !== null && state.userLng !== null
       ? [state.userLat, state.userLng]
@@ -1317,6 +1326,9 @@ function renderMap() {
       maxZoom: 19,
       subdomains: ['a', 'b', 'c'],
     }).addTo(map);
+    map.once('load', () => setMapLoading(false));
+  } else {
+    map.invalidateSize();
   }
   // Clear existing markers and clusters
   try { if (markerClusterGroup) { markerClusterGroup.clearLayers(); markerClusterGroup = null; } } catch (e) {}
@@ -2417,8 +2429,8 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
     if (!valid) toast('Session expired. Please sign in again.', 'info');
   }
   renderAuthArea();
-  if (isPage('home')) {
-    await requestUserLocation();
+  if (isPage('home') || isPage('prices') || isPage('map')) {
+    try { await requestUserLocation(); } catch (e) {}
   }
   await loadReports();
 

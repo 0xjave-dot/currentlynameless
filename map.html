@@ -36,7 +36,20 @@
     </div>
   </header>
 
-  <main>
+  <main style="position:relative;">
+    <div id="map-skeleton" class="map-skeleton">
+      <div class="map-skeleton-grid">
+        <div class="skeleton-bar"></div>
+        <div class="skeleton-row">
+          <div class="skeleton-block"></div>
+          <div class="skeleton-block small"></div>
+        </div>
+        <div class="skeleton-row">
+          <div class="skeleton-block"></div>
+        </div>
+      </div>
+      <div class="map-skeleton-label">Loading map...</div>
+    </div>
     <div id="map" style="height:calc(100vh - 170px); width:100%; border-radius:12px; overflow:hidden;"></div>
   </main>
 
