@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Last Price — Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800;900&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="design-tokens.css" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+</head>
+<body data-page="map">
+  <div class="background-blobs" aria-hidden="true">
+    <div class="blob blob-purple"></div>
+    <div class="blob blob-pink"></div>
+    <div class="blob blob-blue"></div>
+    <div class="blob blob-amber"></div>
+  </div>
+
+  <header>
+    <div class="header-inner">
+      <div class="header-logo">
+        <img class="logo-mark" src="https://i.ibb.co/gMKj8gyc/IMG-20260520-122236-092.jpg" alt="Last Price logo" />
+        <div class="logo-copy">
+          <span class="logo-name">LAST</span>
+          <span class="logo-accent">PRICE</span>
+        </div>
+      </div>
+      <div class="header-spacer"></div>
+      <div class="header-user" id="auth-area"></div>
+    </div>
+  </header>
+
+  <main>
+    <div id="map" style="height:calc(100vh - 170px); width:100%; border-radius:12px; overflow:hidden;"></div>
+  </main>
+
+  <nav class="bottom-nav" id="bottom-nav">
+    <a class="bottom-nav-item" id="nav-home" href="index.html" aria-label="Home">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M3 11.5L12 3l9 8.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"></path>
+      </svg>
+      <span class="nav-label">Home</span>
+    </a>
+    <a class="bottom-nav-item" id="nav-prices" href="prices.html" aria-label="Prices">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M6 4h11a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-4l-4 4H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path>
+        <path d="M16 16h2a1 1 0 0 1 1 1v2"></path>
+      </svg>
+      <span class="nav-label">Prices</span>
+    </a>
+    <a class="bottom-nav-item active" id="nav-map" href="map.html" aria-label="Map">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M3 6l7-2 7 2 4-1v13l-7 2-7-2-4 1V6z"></path>
+      </svg>
+      <span class="nav-label">Map</span>
+    </a>
+    <a class="bottom-nav-item" id="nav-report" href="report.html" aria-label="Report">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 8v8M8 12h8"></path>
+      </svg>
+      <span class="nav-label">Report</span>
+    </a>
+    <a class="bottom-nav-item" id="nav-account" href="account.html" aria-label="Account">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="8" r="3.5"></circle>
+        <path d="M5 21c1.5-4 5-6 7-6s5.5 2 7 6"></path>
+      </svg>
+      <span class="nav-label">Account</span>
+    </a>
+  </nav>
+
+  <div id="toast-container"></div>
+
+  <!-- Scripts: Leaflet + MarkerCluster + Firebase + app script -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

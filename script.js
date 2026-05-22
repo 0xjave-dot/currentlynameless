@@ -32,6 +32,7 @@ let state = {
   userLat: null,
   userLng: null,
   searchQuery: '',
+  category: 'All',
   layout: 'list', // 'list' or 'grid' for desktop/tablet
 };
 
@@ -39,6 +40,7 @@ const DEMO_REPORTS = [
   {
     id: 'demo-1',
     itemName: 'Rice (10kg)',
+    category: 'Groceries',
     price: 5500,
     availability: 'in_stock',
     locationName: 'Yaba, Lagos',
@@ -53,6 +55,7 @@ const DEMO_REPORTS = [
   {
     id: 'demo-2',
     itemName: 'Eggs (Crate)',
+    category: 'Groceries',
     price: 2800,
     availability: 'in_stock',
     locationName: 'Surulere, Lagos',
@@ -67,6 +70,7 @@ const DEMO_REPORTS = [
   {
     id: 'demo-3',
     itemName: 'Tomatoes (Basket)',
+    category: 'Food',
     price: 1200,
     availability: 'limited',
     locationName: 'Ibadan, Oyo',
@@ -81,6 +85,7 @@ const DEMO_REPORTS = [
   {
     id: 'demo-4',
     itemName: 'Fuel (1 Liter)',
+    category: 'Fuel',
     price: 750,
     availability: 'in_stock',
     locationName: 'Lekki, Lagos',
@@ -95,6 +100,7 @@ const DEMO_REPORTS = [
   {
     id: 'demo-5',
     itemName: 'Garri (50kg)',
+    category: 'Groceries',
     price: 18000,
     availability: 'in_stock',
     locationName: 'Benin City, Edo',
@@ -109,6 +115,7 @@ const DEMO_REPORTS = [
   {
     id: 'demo-6',
     itemName: 'Onions (1kg)',
+    category: 'Groceries',
     price: 350,
     availability: 'in_stock',
     locationName: 'Kano, Kano',
@@ -123,6 +130,7 @@ const DEMO_REPORTS = [
   {
     id: 'demo-7',
     itemName: 'Beans (5kg)',
+    category: 'Groceries',
     price: 3500,
     availability: 'in_stock',
     locationName: 'Ife, Osun',
@@ -137,6 +145,7 @@ const DEMO_REPORTS = [
   {
     id: 'demo-8',
     itemName: 'Milk (500ml)',
+    category: 'Groceries',
     price: 650,
     availability: 'in_stock',
     locationName: 'Abuja, FCT',
@@ -169,6 +178,9 @@ function isPage(page) {
   return pageType === page;
 }
 
+const CATEGORIES = ['All','Food','Groceries','Electronics','Fuel','Beverages','Household','Other'];
+    category: 'Groceries',
+
 function setActiveNav() {
   document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
   const path = window.location.pathname.split('/').pop() || 'index.html';
@@ -177,6 +189,8 @@ function setActiveNav() {
   else if (path === 'prices.html') {
     if (params.get('view') === 'map') document.getElementById('nav-map')?.classList.add('active');
     else document.getElementById('nav-prices')?.classList.add('active');
+  } else if (path === 'map.html') {
+    document.getElementById('nav-map')?.classList.add('active');
   } else if (path === 'report.html') document.getElementById('nav-report')?.classList.add('active');
   else if (path === 'account.html') document.getElementById('nav-account')?.classList.add('active');
 }
@@ -247,7 +261,27 @@ function applyReportFilters(reports) {
   if (state.nearMeActive && hasUserLocation()) {
     filtered = filtered.filter(r => haversine(state.userLat, state.userLng, r.lat, r.lng) <= 5);
   }
+  // Category filter
+  if (state.category && state.category !== 'All') {
+    filtered = filtered.filter(r => (r.category || 'Other') === state.category);
+  }
   return filtered;
+}
+
+function renderCategoryBar() {
+  const bar = document.getElementById('category-bar');
+  if (!bar) return;
+  const html = CATEGORIES.map(cat => `<button class="category-chip" data-category="${escHtml(cat)}">${escHtml(cat)}</button>`).join('');
+  bar.innerHTML = html;
+  bar.querySelectorAll('.category-chip').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.category === state.category);
+    btn.addEventListener('click', () => {
+      state.category = btn.dataset.category;
+      bar.querySelectorAll('.category-chip').forEach(b => b.classList.toggle('active', b === btn));
+      state.reports = applyReportFilters(state.allReports);
+      render();
+    });
+  });
 }
 
 function getComparableReports() {
@@ -469,6 +503,14 @@ function enrichReport(report) {
   const media = Array.isArray(report.media) ? report.media : [];
   const totalVotes = upvotes.length + debunks.length;
   const confidence = totalVotes > 0 ? Math.round((upvotes.length / totalVotes) * 100) : null;
+  // Ensure a small price history for sparklines; if real history exists, preserve it
+  const priceHistory = Array.isArray(report.priceHistory) && report.priceHistory.length > 0
+    ? report.priceHistory.slice(-6)
+    : generatePriceHistory(report.price, 6);
+  const first = priceHistory[0] || report.price || 0;
+  const last = priceHistory[priceHistory.length - 1] || report.price || 0;
+  const trendPercent = first ? Math.round(((last - first) / first) * 100) : 0;
+  const trendLabel = (trendPercent > 0 ? '+' : '') + trendPercent + '%';
   return {
     ...report,
     upvotes,
@@ -479,7 +521,31 @@ function enrichReport(report) {
     locationName: report.locationName || '',
     upvoteCount: upvotes.length,
     debunkCount: debunks.length,
+    priceHistory,
+    trendPercent,
+    trendLabel,
   };
+}
+
+function generatePriceHistory(currentPrice = 0, points = 6) {
+  const arr = [];
+  for (let i = points - 1; i >= 0; i--) {
+    // simulate slight variation over time
+    const variance = (Math.sin(i) * 0.03 + (Math.random() - 0.5) * 0.04);
+    const value = Math.max(0, Math.round(currentPrice * (1 + variance)));
+    arr.push(value);
+  }
+  return arr;
+}
+
+function sparklineSVG(values = [], width = 160, height = 36, stroke = '#7c3aed') {
+  if (!values || !values.length) return '';
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = max - min || 1;
+  const step = width / (values.length - 1);
+  const points = values.map((v, i) => `${(i * step).toFixed(2)},${(height - ((v - min) / range) * height).toFixed(2)}`).join(' ');
+  return `<svg class="grid-sparkline" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><polyline fill="none" stroke="${stroke}" stroke-width="2" points="${points}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
 async function firebaseLoadReports() {
@@ -747,6 +813,8 @@ function render() {
   renderComparisonPanel();
   // ensure layout class is applied
   setLayout(state.layout);
+  // render category chips when present
+  renderCategoryBar();
   if (state.view === 'list') renderList();
   else renderMap();
 }
@@ -1005,6 +1073,20 @@ function renderList() {
         handleVote(reportId, voteType);
       });
     });
+    // Attach detail toggle to allow deep-link highlighting
+    container.querySelectorAll('details.grid-details').forEach(d => {
+      d.addEventListener('toggle', e => {
+        const el = e.target.closest('.report-card');
+        if (!el) return;
+        el.classList.toggle('highlight', e.target.open);
+      });
+    });
+    // If URL contains ?report=ID while on prices page, open that report
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      const rid = params.get('report');
+      if (rid) setTimeout(() => openReportDetail(rid), 250);
+    } catch (e) {}
     return;
   }
 
@@ -1052,6 +1134,26 @@ function renderList() {
       if (form) form.style.display = 'none';
     });
   });
+}
+
+function openReportDetail(reportId) {
+  if (!reportId) return;
+  // Ensure we're in list view
+  setView('list');
+  // Wait briefly for DOM render
+  setTimeout(() => {
+    const el = document.getElementById('report-card-' + reportId) || document.querySelector(`.report-card[data-idx][data-idx][data-report-id='${reportId}']`);
+    const target = el || document.getElementById('report-card-' + reportId) || document.querySelector(`[data-idx] .report-card`);
+    const card = el || document.getElementById('report-card-' + reportId);
+    if (!card) return;
+    // If details exist, open it
+    const details = card.querySelector('details') || card.querySelector('details.grid-details') || card.querySelector('.report-details');
+    if (details) details.open = true;
+    card.classList.add('highlight');
+    card.scrollIntoView({behavior: 'smooth', block: 'center'});
+    // remove highlight after a short time
+    setTimeout(() => card.classList.remove('highlight'), 3500);
+  }, 220);
 }
 
 function reportCardHTML(r, isNearest = false) {
@@ -1159,7 +1261,7 @@ function gridCardHTML(r, idx = 0) {
   const down = r.debunkCount ?? r.downvotes ?? r.downvotes?.length ?? 0;
 
   return `
-    <article class="report-card grid-card" data-idx="${idx}">
+    <article id="report-card-${escHtml(r.id)}" class="report-card grid-card" data-idx="${idx}">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
         <div class="item-name">${escHtml(r.itemName || r.name)}</div>
         <div style="text-align:right;">
@@ -1171,10 +1273,20 @@ function gridCardHTML(r, idx = 0) {
         <span class="avail-badge ${escHtml(statusClass)}">${escHtml(statusLabel)}</span>
         <span class="meta-location">${escHtml(location)}</span>
       </div>
-      <div class="vote-row" style="margin-top:6px;">
-        <button class="vote-btn upvote" data-report-id="${escHtml(r.id || r._id || r.name)}" data-vote-type="upvote">👍 ${escHtml(String(up || 0))}</button>
-        <button class="vote-btn debunk" data-report-id="${escHtml(r.id || r._id || r.name)}" data-vote-type="debunk">👎 ${escHtml(String(down || 0))}</button>
-      </div>
+      <details class="grid-details">
+        <summary>Show details</summary>
+        <div style="margin-top:8px;">${sparklineSVG(r.priceHistory, 240, 36)}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <div style="font-size:0.9rem;color:var(--clay-muted);">${r.locationName ? escHtml(r.locationName) : escHtml(location)}</div>
+          <div style="text-align:right;font-size:0.9rem;color:var(--clay-muted);">${escHtml(r.trendLabel || '')}</div>
+        </div>
+        <div style="margin-top:8px;">${r.media && r.media.length ? `<img src="${escHtml(r.media[0].url||r.media[0])}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;" />` : ''}</div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+          <button class="vote-btn upvote" data-report-id="${escHtml(r.id)}" data-vote-type="upvote">👍 ${escHtml(String(up || 0))}</button>
+          <button class="vote-btn debunk" data-report-id="${escHtml(r.id)}" data-vote-type="debunk">👎 ${escHtml(String(down || 0))}</button>
+          <a class="btn btn-ghost btn-sm" href="prices.html?report=${encodeURIComponent(r.id)}">Open listing</a>
+        </div>
+      </details>
     </article>`;
 }
 
@@ -1214,7 +1326,18 @@ function renderMap() {
   const useClustering = typeof L.markerClusterGroup === 'function' || (L && L.markerClusterGroup);
   if (useClustering) {
     try {
-      markerClusterGroup = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 48 });
+      markerClusterGroup = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        maxClusterRadius: 48,
+        iconCreateFunction: function (cluster) {
+          const count = cluster.getChildCount();
+          return L.divIcon({
+            html: `<div class="cluster-icon">${count}</div>`,
+            className: 'lp-cluster',
+            iconSize: [46, 46],
+          });
+        }
+      });
     } catch (e) { markerClusterGroup = null; }
   }
 
@@ -1254,6 +1377,7 @@ function renderMap() {
           <button class="btn btn-sm btn-danger" ${voteDisabled} title="${voteTitle}"
             onclick="handleVote('${r.id}','debunk')">👎 Debunk</button>
         </div>
+        <div style="margin-top:8px;text-align:right;"><a class="btn btn-ghost btn-sm" href="prices.html?report=${encodeURIComponent(r.id)}">Open listing</a></div>
       </div>
     `);
 
@@ -2203,15 +2327,11 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
     setLayout('grid');
     document.getElementById('list-btn')?.style.setProperty('display', 'none');
     document.getElementById('grid-layout-btn')?.classList.add('active');
-
-    // If URL contains ?view=map, open map view immediately; otherwise show grid results.
-    try {
-      const params = new URLSearchParams(window.location.search || '');
-      if (params.get('view') === 'map') setView('map');
-      else setView('list');
-    } catch (e) {
-      setView('list');
-    }
+    // Prices page: always show list/grid view (map is on the dedicated map page)
+    setView('list');
+  } else if (isPage('map')) {
+    // If we're on the dedicated map page, open the map view
+    setView('map');
   } else if (isPage('account')) {
     renderAccountSection();
   }

@@ -39,18 +39,22 @@
         <span class="search-icon" aria-hidden="true"></span>
         <input id="search-input" type="search" aria-label="Search listings" placeholder="Search goods, markets, sellers, states..." />
       </div>
-      <div class="toolbar-right">
-        <button class="btn btn-outline btn-sm" id="nearme-btn"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></span><span>Near Me</span></button>
-        <button class="btn btn-outline btn-sm" id="nationwide-btn"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0 0 20"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/><path d="M12 2c4 4 4 14 0 18"/></svg></span><span>Nationwide</span></button>
-        <button class="btn btn-primary btn-sm" id="compare-btn"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span><span>Compare</span></button>
-        <button class="btn btn-primary btn-sm" id="report-btn" style="display:none;">+ Report Price</button>
-        <div class="view-toggle">
-          <button id="list-btn" class="active">☰ List</button>
-          <button id="map-btn"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6l7-2 7 2 4-1v13l-7 2-7-2-4 1V6z"/></svg></span><span>Map</span></button>
-          <button id="grid-layout-btn" title="Toggle grid layout"><span class="toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></span><span>Grid</span></button>
+      <div class="toolbar-actions">
+        <div class="primary-actions">
+          <button class="btn btn-outline btn-sm" id="nearme-btn"><span>Near Me</span></button>
+          <button class="btn btn-outline btn-sm" id="nationwide-btn"><span>Nationwide</span></button>
+          <button class="btn btn-primary btn-sm" id="compare-btn"><span>Compare</span></button>
+          <button class="btn btn-primary btn-sm" id="report-btn" style="display:none;">+ Report Price</button>
         </div>
-
+        <div class="layout-actions">
+          <button id="list-btn" class="active">List</button>
+          <button id="grid-layout-btn" title="Toggle grid layout">Grid</button>
+        </div>
       </div>
+    </div>
+
+    <div class="category-bar" id="category-bar" role="tablist" aria-label="Categories">
+      <!-- categories injected by JS -->
     </div>
 
     <div class="report-count" id="report-count"></div>
@@ -83,11 +87,6 @@
     <div id="list-view">
       <div class="spinner-wrap"><div class="spinner"></div></div>
     </div>
-
-    <div id="map-view">
-        <div id="map"></div>
-        <button id="map-toggle" class="map-toggle" aria-label="Toggle map" style="position:absolute;right:14px;bottom:92px;z-index:220;">Toggle map</button>
-    </div>
   </main>
 
   <nav class="bottom-nav" id="bottom-nav">
@@ -104,7 +103,7 @@
       </svg>
       <span class="nav-label">Prices</span>
     </a>
-    <a class="bottom-nav-item" id="nav-map" href="prices.html?view=map" aria-label="Map">
+    <a class="bottom-nav-item" id="nav-map" href="map.html" aria-label="Map">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path d="M3 6l7-2 7 2 4-1v13l-7 2-7-2-4 1V6z"></path>
       </svg>
@@ -436,10 +435,7 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <!-- Map scripts removed from prices page; map should live on the dedicated map page -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
