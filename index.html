@@ -32,11 +32,11 @@
   </div>
   <div class="header-spacer"></div>
   <div class="header-actions">
-    <button class="icon-btn" aria-label="Notifications" id="btn-bell">
+    <button class="icon-btn" aria-label="Rewards" id="btn-bell">
       <i class="hgi hgi-stroke hgi-rounded hgi-gift" aria-hidden="true"></i>
     </button>
     <button class="icon-btn" aria-label="Settings" id="btn-gear">
-      <i class="hgi hgi-stroke hgi-rounded hgi-settings-04" aria-hidden="true"></i>
+      <i class="hgi hgi-stroke hgi-rounded hgi-settings-02"></i>
     </button>
   </div>
 </header>
@@ -91,6 +91,92 @@
     </div>
     <div class="ad-pill">Ad</div>
   </div>
+
+  <section class="product-grid-section">
+    <h2 class="section-head">Product grid</h2>
+    <div class="product-grid">
+      <article class="commodity-card">
+        <div class="commodity-card-header">Rice (10kg)</div>
+        <div class="price-row">
+          <div class="price-value">₦5,500</div>
+          <div class="change-badge change-up">↑ 8%</div>
+        </div>
+        <div class="sparkline sparkline-up" aria-hidden="true">
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+            <path d="M4,28 L24,24 L44,22 L64,18 L84,12 L96,8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <circle cx="96" cy="8" r="3.5" fill="currentColor" />
+          </svg>
+        </div>
+        <div class="trend-label">7-day trend</div>
+        <div class="stock-badge stock-in-stock">In Stock</div>
+        <div class="location-text">Yaba, Lagos</div>
+        <div class="voting-row">
+          <button class="vote-segment vote-up" type="button">👍 120</button>
+          <button class="vote-segment vote-down" type="button">👎 12</button>
+        </div>
+      </article>
+      <article class="commodity-card">
+        <div class="commodity-card-header">Diesel (per litre)</div>
+        <div class="price-row">
+          <div class="price-value">₦1,050</div>
+          <div class="change-badge change-down">↓ 3%</div>
+        </div>
+        <div class="sparkline sparkline-down" aria-hidden="true">
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+            <path d="M4,18 L24,22 L44,24 L64,26 L84,28 L96,30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <circle cx="96" cy="30" r="3.5" fill="currentColor" />
+          </svg>
+        </div>
+        <div class="trend-label">7-day trend</div>
+        <div class="stock-badge stock-limited">Limited</div>
+        <div class="location-text">Lekki, Lagos</div>
+        <div class="voting-row">
+          <button class="vote-segment vote-up" type="button">👍 83</button>
+          <button class="vote-segment vote-down" type="button">👎 9</button>
+        </div>
+      </article>
+      <article class="commodity-card">
+        <div class="commodity-card-header">Tomatoes (basket)</div>
+        <div class="price-row">
+          <div class="price-value">₦1,200</div>
+          <div class="change-badge change-up">↑ 12%</div>
+        </div>
+        <div class="sparkline sparkline-up" aria-hidden="true">
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+            <path d="M4,26 L24,22 L44,20 L64,16 L84,12 L96,10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <circle cx="96" cy="10" r="3.5" fill="currentColor" />
+          </svg>
+        </div>
+        <div class="trend-label">7-day trend</div>
+        <div class="stock-badge stock-limited">Limited</div>
+        <div class="location-text">Ibadan, Oyo</div>
+        <div class="voting-row">
+          <button class="vote-segment vote-up" type="button">👍 56</button>
+          <button class="vote-segment vote-down" type="button">👎 15</button>
+        </div>
+      </article>
+      <article class="commodity-card">
+        <div class="commodity-card-header">Garri (25kg)</div>
+        <div class="price-row">
+          <div class="price-value">₦18,000</div>
+          <div class="change-badge change-down">↓ 5%</div>
+        </div>
+        <div class="sparkline sparkline-down" aria-hidden="true">
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+            <path d="M4,24 L24,26 L44,28 L64,30 L84,32 L96,34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <circle cx="96" cy="34" r="3.5" fill="currentColor" />
+          </svg>
+        </div>
+        <div class="trend-label">7-day trend</div>
+        <div class="stock-badge stock-out">Out of Stock</div>
+        <div class="location-text">Benin City, Edo</div>
+        <div class="voting-row">
+          <button class="vote-segment vote-up" type="button">👍 39</button>
+          <button class="vote-segment vote-down" type="button">👎 6</button>
+        </div>
+      </article>
+    </div>
+  </section>
 
   <!-- existing listing area injected by script.js -->
   <h2 class="section-head">Product listings</h2>
@@ -448,6 +534,20 @@
         <button class="btn btn-primary" id="report-submit">Submit Report</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ─── LISTING DETAILS MODAL ────────────────────── -->
+<div class="modal-backdrop listing-backdrop" id="listing-modal" style="display:none;">
+  <div class="modal listing-modal bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="listing-modal-title">
+    <div class="modal-header">
+      <div>
+        <p class="meta-sub">Listing details</p>
+        <h2 id="listing-modal-title">View listing</h2>
+      </div>
+      <button class="modal-close" data-close="listing-modal" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="listing-modal-body"></div>
   </div>
 </div>
 
