@@ -1188,6 +1188,28 @@ main {
   box-shadow: 18px 24px 46px rgba(103,80,164,0.08), -10px -10px 28px rgba(255,255,255,0.92);
 }
 
+.page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.page-loader img {
+  width: min(320px, 80%);
+  height: auto;
+  display: block;
+}
+
+.page-loader.fade-out {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
 .account-page-info h3 {
   margin: 0 0 6px;
   font-size: 1.4rem;

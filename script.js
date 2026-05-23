@@ -3299,6 +3299,31 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
   }
 })();
 
+(function handlePageLoader() {
+  const loader = document.getElementById('page-loader');
+  const minDuration = 8000;
+  const startTime = Date.now();
+
+  function hideLoader() {
+    if (!loader) return;
+    const elapsed = Date.now() - startTime;
+    const delay = Math.max(0, minDuration - elapsed);
+
+    setTimeout(() => {
+      loader.classList.add('fade-out');
+      setTimeout(() => {
+        loader.style.display = 'none';
+      }, 420);
+    }, delay);
+  }
+
+  if (document.readyState === 'complete') {
+    hideLoader();
+  } else {
+    window.addEventListener('load', hideLoader);
+  }
+})();
+
 // Side-swipe navigation: supports touch, mouse drag, and arrow keys
 function enableSideScroll() {
   const order = ['index.html', 'shop.html', 'report.html', 'account.html'];
