@@ -2633,6 +2633,55 @@ document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
   });
 });
 
+// Make commodity cards open a product-detail bottom-sheet with extracted info
+document.querySelectorAll('.commodity-card').forEach(card => {
+  // avoid binding twice
+  if (card.dataset.bound === '1') return;
+  card.dataset.bound = '1';
+  card.addEventListener('click', e => {
+    // ignore clicks on interactive elements inside the card
+    if (e.target.closest('button') || e.target.closest('a')) return;
+    const title = card.querySelector('.commodity-card-header')?.textContent?.trim() || '';
+    const price = card.querySelector('.price-value')?.textContent?.trim() || '';
+    const availability = card.querySelector('.stock-badge')?.textContent?.trim() || '';
+    const location = card.querySelector('.location-text')?.textContent?.trim() || '';
+    const up = card.querySelector('.vote-segment.vote-up')?.textContent?.trim() || '';
+    const down = card.querySelector('.vote-segment.vote-down')?.textContent?.trim() || '';
+    const body = document.getElementById('product-detail-body');
+    if (!body) return;
+    body.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:14px;">
+        <div style="flex:1;min-width:0;">
+          <h3 class="product-name">${escHtml(title)}</h3>
+          <p class="product-meta">${escHtml(availability)}</p>
+        </div>
+        <div style="text-align:right;">
+          <div class="product-price-large">${escHtml(price)}</div>
+        </div>
+      </div>
+      <div class="product-availability">${escHtml(availability)}</div>
+      <div class="product-detail-stats" style="margin-top:12px;">
+        <div class="product-detail-stat">
+          <div class="product-detail-stat-value">${escHtml(up)}</div>
+          <div class="product-detail-stat-label">Upvotes</div>
+        </div>
+        <div class="product-detail-stat">
+          <div class="product-detail-stat-value">${escHtml(down)}</div>
+          <div class="product-detail-stat-label">Debunks</div>
+        </div>
+      </div>
+      <div class="product-seller-info">
+        <span class="product-seller-label">Location</span>
+        <div class="product-seller-value">${escHtml(location)}</div>
+      </div>
+      <div class="product-detail-actions">
+        <button class="btn btn-primary" type="button" onclick="closeModal('product-detail-modal')">Close</button>
+      </div>
+    `;
+    openModal('product-detail-modal');
+  });
+});
+
 // Switch links
 document.getElementById('switch-to-register').addEventListener('click', () => {
   closeModal('login-modal');
