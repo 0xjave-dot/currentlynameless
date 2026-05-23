@@ -2707,7 +2707,7 @@ main {
   }
 
   .bottom-nav-item span {
-    display: inline-block;
+    display: none;
     font-size: 0.75rem;
   }
 
@@ -2757,11 +2757,11 @@ main {
   }
 
   .bottom-nav-item.active .nav-icon {
-    margin-right: 6px;
+    margin-right: 0;
   }
 
   .bottom-nav-primary {
-    background: tr0parent;
+    background: transparent;
     color: inherit;
     border-radius: 0;
     width: auto;
@@ -2786,7 +2786,6 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 8px;
   }
 
   #nav-create .nav-icon {
