@@ -42,8 +42,10 @@
 </header>
 
 <main class="home-main mobile-home">
-  <img class="icon-img search-icon" src="assets/icons/search.svg" alt="Search" />
-  <input id="search-input" class="search-main" type="search" aria-label="Search" placeholder="Search" />
+  <div class="search-wrap">
+    <img class="icon-img search-icon" src="assets/icons/search.svg" alt="Search" />
+    <input id="search-input" class="search-main" type="search" aria-label="Search" placeholder="Search" />
+  </div>
 
   <div class="promo-card" id="promo-card">
     <div class="promo-left">
@@ -93,7 +95,7 @@
   </div>
 
   <section class="product-grid-section">
-    
+    <h2 class="section-head">Best prices in your area today</h2>
 
     <div class="category-shelf">
       <div class="category-shelf-header">
@@ -115,13 +117,8 @@
               <circle cx="96" cy="8" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Yaba, Lagos</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 120</button>
-            <button class="vote-segment vote-down" type="button">👎 12</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -136,13 +133,8 @@
               <circle cx="96" cy="10" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Ibadan, Oyo</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 56</button>
-            <button class="vote-segment vote-down" type="button">👎 15</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -157,13 +149,8 @@
               <circle cx="96" cy="34" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-out">Out of Stock</div>
           <div class="location-text">Benin City, Edo</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 39</button>
-            <button class="vote-segment vote-down" type="button">👎 6</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -178,13 +165,8 @@
               <circle cx="96" cy="12" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Akure, Ondo</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 67</button>
-            <button class="vote-segment vote-down" type="button">👎 8</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -199,13 +181,8 @@
               <circle cx="96" cy="10" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Minna, Niger</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 78</button>
-            <button class="vote-segment vote-down" type="button">👎 4</button>
-          </div>
         </article>
         <article class="commodity-card" role="listitem">
           <div class="commodity-card-header">Yam (medium)</div>
@@ -213,7 +190,6 @@
             <div class="price-value">₦1,200</div>
             <div class="change-badge change-up">↑ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Abeokuta, Ogun</div>
         </article>
@@ -224,7 +200,6 @@
             <div class="price-value">₦6,800</div>
             <div class="change-badge change-down">↓ 1%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Ogbomosho, Oyo</div>
         </article>
@@ -235,7 +210,6 @@
             <div class="price-value">₦900</div>
             <div class="change-badge change-up">↑ 3%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Port Harcourt, Rivers</div>
         </article>
@@ -246,7 +220,6 @@
             <div class="price-value">₦2,500</div>
             <div class="change-badge change-up">↑ 1%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Onitsha, Anambra</div>
         </article>
@@ -257,7 +230,6 @@
             <div class="price-value">₦250</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Surulere, Lagos</div>
         </article>
@@ -268,7 +240,6 @@
             <div class="price-value">₦9,200</div>
             <div class="change-badge change-up">↑ 5%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Kaduna, Kaduna</div>
         </article>
@@ -295,13 +266,8 @@
               <circle cx="96" cy="35" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Calabar, Cross River</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 45</button>
-            <button class="vote-segment vote-down" type="button">👎 3</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -316,13 +282,8 @@
               <circle cx="96" cy="6" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Enugu, Enugu</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 92</button>
-            <button class="vote-segment vote-down" type="button">👎 5</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -337,13 +298,8 @@
               <circle cx="96" cy="9" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Ikeja, Lagos</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 104</button>
-            <button class="vote-segment vote-down" type="button">👎 2</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem" onclick="openProductDetailModal('wheat-flour')" style="cursor:pointer;">
@@ -358,13 +314,8 @@
               <circle cx="96" cy="8" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Katsina, Katsina</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 95</button>
-            <button class="vote-segment vote-down" type="button">👎 5</button>
-          </div>
         </article>
         <article class="commodity-card" role="listitem">
           <div class="commodity-card-header">Pasta (1kg)</div>
@@ -372,7 +323,6 @@
             <div class="price-value">₦420</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Awka, Anambra</div>
         </article>
@@ -383,7 +333,6 @@
             <div class="price-value">₦360</div>
             <div class="change-badge change-up">↑ 1%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Uyo, Akwa Ibom</div>
         </article>
@@ -394,7 +343,6 @@
             <div class="price-value">₦1,400</div>
             <div class="change-badge change-up">↑ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Lagos Island</div>
         </article>
@@ -405,7 +353,6 @@
             <div class="price-value">₦1,100</div>
             <div class="change-badge change-up">↑ 1%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Owerri, Imo</div>
         </article>
@@ -416,7 +363,6 @@
             <div class="price-value">₦320</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Benin City, Edo</div>
         </article>
@@ -427,7 +373,6 @@
             <div class="price-value">₦2,400</div>
             <div class="change-badge change-down">↓ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Kano, Kano</div>
         </article>
@@ -454,13 +399,8 @@
               <circle cx="96" cy="34" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Port Harcourt, Rivers</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 34</button>
-            <button class="vote-segment vote-down" type="button">👎 7</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -475,13 +415,8 @@
               <circle cx="96" cy="22" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Abuja, FCT</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 42</button>
-            <button class="vote-segment vote-down" type="button">👎 4</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -496,13 +431,8 @@
               <circle cx="96" cy="33" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Ibadan, Oyo</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 29</button>
-            <button class="vote-segment vote-down" type="button">👎 8</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -517,13 +447,8 @@
               <circle cx="96" cy="12" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Lagos Mainland</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 68</button>
-            <button class="vote-segment vote-down" type="button">👎 2</button>
-          </div>
         </article>
         <article class="commodity-card" role="listitem">
           <div class="commodity-card-header">Solar Battery (small)</div>
@@ -531,7 +456,6 @@
             <div class="price-value">₦12,500</div>
             <div class="change-badge change-up">↑ 3%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Kano, Kano</div>
         </article>
@@ -542,7 +466,6 @@
             <div class="price-value">₦6,000</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">Available</div>
           <div class="location-text">Owerri, Imo</div>
         </article>
@@ -553,7 +476,6 @@
             <div class="price-value">₦700</div>
             <div class="change-badge change-down">↓ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Maiduguri, Borno</div>
         </article>
@@ -564,7 +486,6 @@
             <div class="price-value">₦3,000</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">Available</div>
           <div class="location-text">Abuja, FCT</div>
         </article>
@@ -575,7 +496,6 @@
             <div class="price-value">₦2,800</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">Available</div>
           <div class="location-text">Lagos Mainland</div>
         </article>
@@ -586,7 +506,6 @@
             <div class="price-value">₦2,200</div>
             <div class="change-badge change-up">↑ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Enugu, Enugu</div>
         </article>
@@ -597,7 +516,6 @@
             <div class="price-value">₦1,100</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Uyo, Akwa Ibom</div>
         </article>
@@ -624,13 +542,8 @@
               <circle cx="96" cy="30" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Lekki, Lagos</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 83</button>
-            <button class="vote-segment vote-down" type="button">👎 9</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -645,13 +558,8 @@
               <circle cx="96" cy="8" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Abuja, FCT</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 47</button>
-            <button class="vote-segment vote-down" type="button">👎 5</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -666,13 +574,8 @@
               <circle cx="96" cy="32" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Ilorin, Kwara</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 74</button>
-            <button class="vote-segment vote-down" type="button">👎 8</button>
-          </div>
         </article>
         <article class="commodity-card" role="listitem">
           <div class="commodity-card-header">Petrol (per L)</div>
@@ -680,7 +583,6 @@
             <div class="price-value">₦780</div>
             <div class="change-badge change-up">↑ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Warri, Delta</div>
         </article>
@@ -691,7 +593,6 @@
             <div class="price-value">₦7,800</div>
             <div class="change-badge change-up">↑ 1%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Benin City, Edo</div>
         </article>
@@ -702,7 +603,6 @@
             <div class="price-value">₦15,600</div>
             <div class="change-badge change-up">↑ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Lagos Island</div>
         </article>
@@ -713,7 +613,6 @@
             <div class="price-value">₦700</div>
             <div class="change-badge change-down">↓ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Maiduguri, Borno</div>
         </article>
@@ -724,7 +623,6 @@
             <div class="price-value">₦6,500</div>
             <div class="change-badge change-up">↑ 3%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Port Harcourt, Rivers</div>
         </article>
@@ -735,7 +633,6 @@
             <div class="price-value">₦1,100</div>
             <div class="change-badge change-down">↓ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Ibadan, Oyo</div>
         </article>
@@ -746,7 +643,6 @@
             <div class="price-value">₦20,500</div>
             <div class="change-badge change-up">↑ 4%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Kaduna, Kaduna</div>
         </article>
@@ -757,7 +653,6 @@
             <div class="price-value">₦23,400</div>
             <div class="change-badge change-up">↑ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Sapele, Delta</div>
         </article>
@@ -784,13 +679,8 @@
               <circle cx="96" cy="34" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Calabar, Cross River</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 58</button>
-            <button class="vote-segment vote-down" type="button">👎 12</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -805,13 +695,8 @@
               <circle cx="96" cy="34" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Katsina, Katsina</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 88</button>
-            <button class="vote-segment vote-down" type="button">👎 14</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -826,13 +711,8 @@
               <circle cx="96" cy="13" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Damaturu, Yobe</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 73</button>
-            <button class="vote-segment vote-down" type="button">👎 10</button>
-          </div>
         </article>
 
         <article class="commodity-card" role="listitem">
@@ -847,13 +727,8 @@
               <circle cx="96" cy="16" r="3.5" fill="currentColor" />
             </svg>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">In Stock</div>
           <div class="location-text">Ikeja, Lagos</div>
-          <div class="voting-row">
-            <button class="vote-segment vote-up" type="button">👍 53</button>
-            <button class="vote-segment vote-down" type="button">👎 6</button>
-          </div>
         </article>
         <article class="commodity-card" role="listitem">
           <div class="commodity-card-header">Barber (haircut)</div>
@@ -861,7 +736,6 @@
             <div class="price-value">₦500</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">Available</div>
           <div class="location-text">Ikeja, Lagos</div>
         </article>
@@ -872,7 +746,6 @@
             <div class="price-value">₦1,200</div>
             <div class="change-badge change-up">↑ 2%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Aba, Abia</div>
         </article>
@@ -883,7 +756,6 @@
             <div class="price-value">₦2,000</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">Available</div>
           <div class="location-text">Enugu, Enugu</div>
         </article>
@@ -894,7 +766,6 @@
             <div class="price-value">₦1,500</div>
             <div class="change-badge change-down">↓ 1%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">Available</div>
           <div class="location-text">Port Harcourt, Rivers</div>
         </article>
@@ -905,7 +776,6 @@
             <div class="price-value">₦1,800</div>
             <div class="change-badge change-up">↑ 1%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-limited">Limited</div>
           <div class="location-text">Makurdi, Benue</div>
         </article>
@@ -916,7 +786,6 @@
             <div class="price-value">₦3,000</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">Available</div>
           <div class="location-text">Uyo, Akwa Ibom</div>
         </article>
@@ -927,7 +796,6 @@
             <div class="price-value">₦150</div>
             <div class="change-badge change-flat">± 0%</div>
           </div>
-          <div class="trend-label">7-day trend</div>
           <div class="stock-badge stock-in-stock">Available</div>
           <div class="location-text">Lagos Mainland</div>
         </article>
@@ -1326,3 +1194,4 @@
 <script src="firebase-config.js"></script><script src="script.js"></script>
 </body>
 </html>
+
