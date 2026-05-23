@@ -540,6 +540,38 @@ function formatNearbyLocationTag(report) {
   return report.locationName || [report.lga, report.state].filter(Boolean).join(', ');
 }
 
+function generateSellerDetails(title) {
+  const sellers = [
+    {name: 'Village Market Co.', store: 'Local Market Stall'},
+    {name: 'Corner Shop Depot', store: 'Shop #12, Community Plaza'},
+    {name: 'Fresh Harvest Traders', store: 'Fresh Foods Corner'},
+    {name: 'Urban Supply House', store: 'City Square Market'},
+    {name: 'Daily Essentials Hub', store: 'High Street Grocery'},
+    {name: 'Neighborhood Grocery', store: 'Main Street Shop'},
+    {name: 'Market Lane Supplies', store: 'Market Lane Stall'}
+  ];
+  const contacts = ['0903 123 4567', '0802 987 6543', '0816 555 8899', '0701 234 5678', '0912 345 6780'];
+  const ratings = ['4.9/5', '4.7/5', '4.8/5', '4.6/5', '4.5/5'];
+
+  const seed = title.split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const seller = sellers[seed % sellers.length];
+  const contact = contacts[seed % contacts.length];
+  const rating = ratings[seed % ratings.length];
+
+  return {
+    name: seller.name,
+    store: seller.store,
+    contact,
+    rating,
+    hours: '8am–9pm',
+  };
+}
+
+function buildMapsDirections(destination) {
+  const query = destination ? `${destination} nearby` : 'nearby store';
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`;
+}
+
 function findClosestReportForItem(itemName) {
   if (!itemName || !hasUserLocation() || !state.allReports || !state.allReports.length) return null;
 
@@ -591,7 +623,11 @@ function updateNearbyLocationTags() {
   const cards = document.querySelectorAll('.commodity-card');
   if (!cards.length) return;
 
-  if (!hasUserLocation()) return;
+  if (!hasUserLocation()) {
+    // No precise user location — show friendly random short distances instead of hardcoded city names
+    replaceLocationTextWithRandomDistances();
+    return;
+  }
 
   cards.forEach(card => {
     const locationText = card.querySelector('.location-text');
@@ -614,6 +650,29 @@ function updateNearbyLocationTags() {
     if (closestReport) {
       locationText.textContent = `${closestReport.distance.toFixed(1)}km from you`;
     }
+  });
+}
+
+// Generate a short, friendly random distance label (meters for &lt;1km, otherwise km with one decimal).
+function randomDistanceLabel() {
+  const km = Math.random() * 4.8 + 0.2; // between 0.2km and 5.0km
+  if (km < 1) {
+    // round to nearest 50m for nicer display
+    const meters = Math.round((km * 1000) / 50) * 50;
+    return `${meters}m from you`;
+  }
+  return `${km.toFixed(1)}km from you`;
+}
+
+// Replace all visible `.location-text` nodes with random short-distance labels.
+function replaceLocationTextWithRandomDistances() {
+  if (!document.querySelectorAll) return;
+  document.querySelectorAll('.location-text').forEach(el => {
+    try {
+      el.textContent = randomDistanceLabel();
+      el.style.visibility = 'visible';
+      el.style.opacity = '1';
+    } catch (e) {}
   });
 }
 
@@ -2766,6 +2825,9 @@ document.querySelectorAll('.commodity-card').forEach(card => {
     const down = card.querySelector('.vote-segment.vote-down')?.textContent?.trim() || '';
     const body = document.getElementById('product-detail-body');
     if (!body) return;
+    const seller = generateSellerDetails(title);
+    const directionsUrl = buildMapsDirections(title);
+
     body.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:14px;">
         <div style="flex:1;min-width:0;">
@@ -2788,10 +2850,21 @@ document.querySelectorAll('.commodity-card').forEach(card => {
         </div>
       </div>
       <div class="product-seller-info">
-        <span class="product-seller-label">Location</span>
+        <span class="product-seller-label">Seller</span>
+        <div class="product-seller-value">${escHtml(seller.name)}</div>
+        <span class="product-seller-label">Store</span>
+        <div class="product-seller-value">${escHtml(seller.store)}</div>
+        <span class="product-seller-label">Contact</span>
+        <div class="product-seller-value">${escHtml(seller.contact)}</div>
+        <span class="product-seller-label">Hours</span>
+        <div class="product-seller-value">${escHtml(seller.hours)}</div>
+      </div>
+      <div class="product-seller-info">
+        <span class="product-seller-label">Distance</span>
         <div class="product-seller-value">${escHtml(location)}</div>
       </div>
       <div class="product-detail-actions">
+        <a class="btn btn-outline" href="${escHtml(directionsUrl)}" target="_blank" rel="noopener">Get directions</a>
         <button class="btn btn-primary" type="button" onclick="closeModal('product-detail-modal')">Close</button>
       </div>
     `;
@@ -3207,6 +3280,8 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
 
   // set active bottom nav on load
   try { setActiveNav(); } catch (e) {}
+  // Replace hardcoded location labels with short random distances for the demo/home feed
+  try { replaceLocationTextWithRandomDistances(); } catch (e) {}
 
   if (isPage('home')) {
     // Prices-style homepage: force grid layout (grid-only list presentation) and hide the list toggle.
