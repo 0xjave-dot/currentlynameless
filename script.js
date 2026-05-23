@@ -31,6 +31,7 @@ let state = {
   comparisonLocations: [],
   userLat: null,
   userLng: null,
+  userLocationName: '',
   searchQuery: '',
   shopSearchQuery: '',
   shoppingList: [],
@@ -532,6 +533,88 @@ function haversine(lat1, lng1, lat2, lng2) {
 
 function hasUserLocation() {
   return state.userLat !== null && state.userLng !== null;
+}
+
+function formatNearbyLocationTag(report) {
+  if (!report) return '';
+  return report.locationName || [report.lga, report.state].filter(Boolean).join(', ');
+}
+
+function findClosestReportForItem(itemName) {
+  if (!itemName || !hasUserLocation() || !state.allReports || !state.allReports.length) return null;
+
+  const normalizedName = itemName.trim().toLowerCase();
+  const candidates = state.allReports
+    .filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng))
+    .map(report => {
+      const reportName = (report.itemName || report.name || '').toString().trim().toLowerCase();
+      const score = reportName === normalizedName ? 0 : reportName.includes(normalizedName) ? 1 : normalizedName.includes(reportName) ? 2 : 3;
+      return {
+        report,
+        score,
+        distance: haversine(state.userLat, state.userLng, report.lat, report.lng),
+      };
+    })
+    .filter(item => item.score < 3)
+    .sort((a, b) => a.score - b.score || a.distance - b.distance);
+
+  return candidates.length ? candidates[0].report : null;
+}
+
+function getClosestLocationLabels(maxCount = 20) {
+  if (!hasUserLocation() || !state.allReports || !state.allReports.length) return [];
+
+  const sorted = state.allReports
+    .filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng))
+    .map(report => ({
+      report,
+      distance: haversine(state.userLat, state.userLng, report.lat, report.lng),
+    }))
+    .sort((a, b) => a.distance - b.distance);
+
+  const labels = [];
+  const seen = new Set();
+  for (const {report} of sorted) {
+    const label = formatNearbyLocationTag(report) || reportLocationLabel(report);
+    if (!label || seen.has(label)) continue;
+    seen.add(label);
+    labels.push(label);
+    if (labels.length >= maxCount) break;
+  }
+
+  return labels;
+}
+
+function updateNearbyLocationTags() {
+  if (!isPage('home') || !document.querySelectorAll) return;
+
+  const cards = document.querySelectorAll('.commodity-card');
+  if (!cards.length) return;
+
+  if (!hasUserLocation()) return;
+
+  cards.forEach(card => {
+    const locationText = card.querySelector('.location-text');
+    if (!locationText) return;
+
+    const title = card.querySelector('.commodity-card-header')?.textContent?.trim() || '';
+    const match = findClosestReportForItem(title);
+    if (match && Number.isFinite(match.lat) && Number.isFinite(match.lng)) {
+      const distance = haversine(state.userLat, state.userLng, match.lat, match.lng);
+      locationText.textContent = `${distance.toFixed(1)}km from you`;
+      return;
+    }
+
+    const allReports = state.allReports && state.allReports.length > 0 ? state.allReports : [];
+    const closestReport = allReports
+      .filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lng))
+      .map(r => ({report: r, distance: haversine(state.userLat, state.userLng, r.lat, r.lng)}))
+      .sort((a, b) => a.distance - b.distance)[0];
+
+    if (closestReport) {
+      locationText.textContent = `${closestReport.distance.toFixed(1)}km from you`;
+    }
+  });
 }
 
 function reportLocationLabel(report) {
@@ -1124,33 +1207,66 @@ async function firebaseSignInWithGoogle() {
 }
 
 async function requestUserLocation() {
-  return new Promise(resolve => {
-    if (!navigator.geolocation) {
-      toast('Geolocation is not available in your browser.', 'info');
-      resolve(false);
-      return;
+  async function applyLocation(lat, lng, locationName = '') {
+    state.userLat = lat;
+    state.userLng = lng;
+    state.nearMeActive = true;
+    if (locationName) {
+      state.userLocationName = locationName;
     }
+    const nearBtn = document.getElementById('nearme-btn');
+    if (nearBtn) {
+      nearBtn.classList.add('active-nearme');
+    }
+    if (map) map.setView([state.userLat, state.userLng], 12);
+    updateNearbyLocationTags();
+  }
 
-    toast('Requesting your location to show nearby listings…', 'info', 3000);
+  async function fallbackIpLocation() {
+    try {
+      const response = await fetch('https://ipwhois.app/json/');
+      if (!response.ok) throw new Error('IP geolocation failed');
+      const data = await response.json();
+      const lat = Number(data.latitude);
+      const lng = Number(data.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('Invalid IP location coordinates');
+      const lga = data.city || '';
+      const stateName = data.region || '';
+      const country = data.country || '';
+      const locationName = [lga, stateName, country].filter(Boolean).join(', ');
+      await applyLocation(lat, lng, locationName);
+      toast('Using network-based location approximation for nearby listings.', 'info', 3000);
+      return true;
+    } catch (err) {
+      console.warn('IP location fallback failed:', err);
+      toast('Unable to determine your location. Showing broader listings.', 'info');
+      return false;
+    }
+  }
+
+  if (!navigator.geolocation) {
+    toast('Geolocation is not available in your browser. Using approximate network location.', 'info', 3000);
+    return fallbackIpLocation();
+  }
+
+  toast('Requesting your location to show nearby listings…', 'info', 3000);
+  const success = await new Promise(resolve => {
     navigator.geolocation.getCurrentPosition(
-      pos => {
-        state.userLat = pos.coords.latitude;
-        state.userLng = pos.coords.longitude;
-        state.nearMeActive = true;
-        const nearBtn = document.getElementById('nearme-btn');
-        if (nearBtn) {
-          nearBtn.classList.add('active-nearme');
-        }
-        if (map) map.setView([state.userLat, state.userLng], 12);
+      async pos => {
+        await applyLocation(pos.coords.latitude, pos.coords.longitude);
         resolve(true);
       },
-      err => {
-        toast('Location access declined or unavailable. Showing wider listings.', 'info');
+      async err => {
+        console.warn('Geolocation request failed:', err);
         resolve(false);
       },
       { enableHighAccuracy: true, timeout: 9000 }
     );
   });
+
+  if (success) return true;
+  toast('Location access declined or unavailable. Using approximate network location.', 'info', 3000);
+  return fallbackIpLocation();
 }
 
 async function loadReports() {
@@ -1311,6 +1427,7 @@ function render() {
   if (isPage('shop')) renderShopPage();
   else if (state.view === 'list') renderList();
   else renderMap();
+  updateNearbyLocationTags();
 }
 
 function updatePrimarySelection() {
