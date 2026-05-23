@@ -1,4 +1,4 @@
-# Last Price 🇳🇬
+# Market 🇳🇬
 
 **Real-time crowdsourced price and availability tracker for Nigeria.**
 
@@ -32,7 +32,7 @@ Open `http://localhost:3000` in your browser.
 ## Project Structure
 
 ```
-last-price/
+market/
 ├── server.js       # Express API server
 ├── index.html      # Single-page frontend
 ├── style.css       # Responsive stylesheet
@@ -65,7 +65,7 @@ last-price/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
-| `JWT_SECRET` | `last-price-secret-change-in-production` | **Override this in production!** |
+| `JWT_SECRET` | `market-secret-change-in-production` | **Override this in production!** |
 
 ## Firebase
 

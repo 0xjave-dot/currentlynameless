@@ -1,5 +1,5 @@
 /* ================================================================
-  Last Price — Frontend Script
+  Market — Frontend Script
   ================================================================ */
 
 const firebaseConfig = window.firebaseConfig || null;
@@ -3324,6 +3324,35 @@ document.getElementById('compare-btn')?.addEventListener('click', () => {
   }
 })();
 
+// ── Shop greeting update ─────────────────────────
+(function updateShopGreeting() {
+  const titleEl = document.querySelector('.shop-greeting-title');
+  const avatarEl = document.querySelector('.shop-avatar');
+  if (!titleEl) return;
+
+  // Get time of day
+  const hour = new Date().getHours();
+  let timeOfDay = 'Evening';
+  if (hour >= 5 && hour < 12) timeOfDay = 'Morning';
+  else if (hour >= 12 && hour < 17) timeOfDay = 'Afternoon';
+
+  // Get user name
+  let userName = 'there';
+  if (state.accountProfile?.name) {
+    userName = state.accountProfile.name.split(' ')[0];
+  } else if (state.email) {
+    const extracted = state.email.split('@')[0].replace(/[._-]+/g, ' ').trim();
+    if (extracted) userName = extracted.replace(/\b\w/g, letter => letter.toUpperCase()).split(' ')[0];
+  }
+
+  titleEl.textContent = `${timeOfDay}, ${userName}`;
+
+  // Update avatar with first letter
+  if (avatarEl) {
+    avatarEl.textContent = userName.slice(0, 1).toUpperCase();
+  }
+})();
+
 // Side-swipe navigation: supports touch, mouse drag, and arrow keys
 function enableSideScroll() {
   const order = ['index.html', 'shop.html', 'report.html', 'account.html'];
@@ -3382,3 +3411,44 @@ function enableSideScroll() {
     if (e.key === 'ArrowLeft') goToIndex(currentIndex - 1);
   });
 }
+
+// ── Broken Image Placeholder Handler ─────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const handleBrokenImage = (img) => {
+    if (img.parentElement.classList.contains('shop-hero-illustration')) {
+      // Replace broken hero image with emoji
+      const container = img.parentElement;
+      container.innerHTML = '<div style="font-size: 72px; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">🛍️</div>';
+    }
+  };
+
+  // Handle images that fail to load
+  document.querySelectorAll('img').forEach(img => {
+    img.addEventListener('error', function() {
+      handleBrokenImage(this);
+    });
+
+    // Check if image already failed to load
+    if (!img.complete || img.naturalHeight === 0) {
+      handleBrokenImage(img);
+    }
+  });
+
+  // Observe for new images added dynamically
+  if (window.MutationObserver) {
+    new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.tagName === 'IMG') {
+            node.addEventListener('error', function() {
+              handleBrokenImage(this);
+            });
+            if (!node.complete || node.naturalHeight === 0) {
+              handleBrokenImage(node);
+            }
+          }
+        });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+});

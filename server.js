@@ -8,7 +8,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'last-price-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'market-secret-change-in-production';
 const SALT_ROUNDS = 10;
 const JWT_EXPIRY = '7d';
 
@@ -454,5 +454,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Last Price server running on port ${PORT}`);
+  console.log(`Market server running on port ${PORT}`);
 });
